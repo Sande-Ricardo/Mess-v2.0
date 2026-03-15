@@ -8,5 +8,9 @@ export const environment = {
     authDomain: 'placeholder-auth-domain',
     messagingSenderId: 'placeholder-messaging-sender-id',
     databaseURL: 'https://placeholder-database-url.firebaseio.com'
+  },
+  cloudinary: {
+    cloudName: 'placeholder-cloud-name',
+    uploadPreset: 'placeholder-upload-preset'
   }
 };
