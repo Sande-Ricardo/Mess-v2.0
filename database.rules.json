@@ -2,8 +2,14 @@
   "rules": {
     "users": {
       "$uid": {
-        ".read": "auth != null && auth.uid == $uid",
+        ".read": "auth != null",
         ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "usernames": {
+      "$username": {
+        ".read": "auth != null",
+        ".write": "auth != null && !data.exists()"
       }
     },
     ".read": false,
