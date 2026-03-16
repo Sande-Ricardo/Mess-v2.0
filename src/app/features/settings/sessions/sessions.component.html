@@ -1,0 +1,45 @@
+<div class="sessions-container page-layout">
+  <div class="header">
+    <h2>Active Sessions</h2>
+    <p>Manage the devices where you are currently logged in.</p>
+  </div>
+
+  <div class="sessions-list">
+    @if (isLoading()) {
+      <div class="loading-state">
+        <p>Loading sessions...</p>
+      </div>
+    } @else if (sessions().length === 0) {
+      <div class="empty-state">
+        <p>No active sessions found.</p>
+      </div>
+    } @else {
+      @for (session of sessions(); track session.id) {
+        <div class="session-card glass-panel fade-in">
+          <div class="session-info">
+            <div class="device-icon">
+              <!-- Simple icon mapping based on info (mocking with generic icon here) -->
+              <span>📱/💻</span> 
+            </div>
+            <div class="details">
+              <h3>{{ session.deviceInfo }}</h3>
+              <p class="location">Location: {{ session.ipCountry }}</p>
+              <p class="last-active">
+                Last active: {{ session.lastActive | date:'medium' }}
+                @if (session.sessionId === 'current') {
+                  <span class="badge current">Current Device</span>
+                }
+              </p>
+            </div>
+          </div>
+          
+          @if (session.sessionId !== 'current') {
+            <div class="actions">
+              <button class="btn-danger" (click)="revokeSession(session.id)">Revoke</button>
+            </div>
+          }
+        </div>
+      }
+    }
+  </div>
+</div>

@@ -11,37 +11,74 @@
       </div>
     }
 
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="auth-form">
-      <div class="form-group">
-        <label for="email">Email</label>
-        <input 
-          id="email" 
-          type="email" 
-          formControlName="email" 
-          placeholder="Enter your email"
-          [class.invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
-        />
-      </div>
-
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input 
-          id="password" 
-          type="password" 
-          formControlName="password" 
-          placeholder="Enter your password"
-          [class.invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
-        />
-      </div>
-
-      <button type="submit" class="btn-primary" [disabled]="loginForm.invalid || isLoading()">
-        @if (isLoading()) {
-          <span>Loading...</span>
-        } @else {
-          <span>Log In</span>
-        }
+    <!-- Toggle Login Method -->
+    <div class="toggle-container">
+      <button 
+        type="button" 
+        class="toggle-btn" 
+        [class.active]="loginMethod() === 'email'" 
+        (click)="loginMethod() !== 'email' ? toggleLoginMethod() : null">
+        Email
       </button>
-    </form>
+      <button 
+        type="button" 
+        class="toggle-btn" 
+        [class.active]="loginMethod() === 'qr'" 
+        (click)="loginMethod() !== 'qr' ? toggleLoginMethod() : null">
+        QR Code
+      </button>
+    </div>
+
+    @if (loginMethod() === 'email') {
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="auth-form fade-in">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input 
+            id="email" 
+            type="email" 
+            formControlName="email" 
+            placeholder="Enter your email"
+            [class.invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input 
+            id="password" 
+            type="password" 
+            formControlName="password" 
+            placeholder="Enter your password"
+            [class.invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+          />
+        </div>
+
+        <button type="submit" class="btn-primary" [disabled]="loginForm.invalid || isLoading()">
+          @if (isLoading()) {
+            <span>Loading...</span>
+          } @else {
+            <span>Log In</span>
+          }
+        </button>
+      </form>
+    } @else {
+      <!-- QR Flow -->
+      <div class="qr-container fade-in">
+        <p class="qr-instructions">Scan this code with your Mess Mobile App to sign in instantly.</p>
+        
+        <div class="qr-canvas-wrapper">
+          <canvas #qrCanvas></canvas>
+        </div>
+
+        <!-- Dev Simulator -->
+        <div class="simulation-banner">
+          <p>Missing the Mobile App? Simulate a scan for the Web MVP.</p>
+          <button type="button" class="btn-secondary" (click)="simulateMobileScan()" [disabled]="isLoading() || !currentQRToken()">
+            Simulate Scan
+          </button>
+        </div>
+      </div>
+    }
 
     <div class="auth-footer">
       <p>Don't have an account? <a routerLink="/auth/register">Sign Up</a></p>
