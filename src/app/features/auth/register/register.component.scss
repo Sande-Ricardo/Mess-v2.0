@@ -1,0 +1,129 @@
+@use '../login/login.component.scss';
+
+// Extends base auth styles from login
+.auth-container {
+  @extend .auth-container;
+}
+.auth-card {
+  @extend .auth-card;
+}
+.auth-header {
+  @extend .auth-header;
+}
+.auth-form {
+  @extend .auth-form;
+}
+.form-group {
+  @extend .form-group;
+}
+.btn-primary {
+  @extend .btn-primary;
+}
+.error-banner {
+  @extend .error-banner;
+}
+.auth-footer {
+  @extend .auth-footer;
+}
+
+// Fade in animations for smooth step transitions
+.fade-in {
+  animation: fadeIn 0.3s ease-in forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Username availability specific styles
+.username-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  .at-symbol {
+    position: absolute;
+    left: 14px;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  input {
+    width: 100%;
+    padding-left: 2.2rem;
+    padding-right: 2.5rem;
+  }
+
+  .status-icon {
+    position: absolute;
+    right: 14px;
+    font-weight: bold;
+
+    &.loading {
+      color: var(--text-secondary);
+      animation: spin 1s linear infinite;
+    }
+    &.success {
+      color: #2ed573; // Green success mark
+    }
+    &.error {
+      color: var(--accent-danger);
+    }
+  }
+}
+
+.text-danger {
+  color: var(--accent-danger);
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+// Recovery Phrase styles
+.phrase-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+.crypto-warning {
+  background: rgba(255, 165, 2, 0.1);
+  border-left: 4px solid #ffa502;
+  padding: 0.875rem;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  border-radius: 4px;
+
+  strong {
+    color: #ffa502;
+  }
+}
+
+.recovery-box {
+  background: var(--input-bg);
+  border: 1px dashed var(--text-secondary);
+  padding: 1.5rem;
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: monospace;
+  font-size: 1.25rem;
+  text-align: center;
+  line-height: 1.8;
+  letter-spacing: 0.05rem;
+  word-spacing: 0.5rem;
+  user-select: all; // Easy select across the whole box
+}

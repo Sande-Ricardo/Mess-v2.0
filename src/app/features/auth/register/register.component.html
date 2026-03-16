@@ -1,0 +1,163 @@
+<div class="auth-container">
+  <div class="auth-card glass-panel">
+    
+    <!-- Step 1: Account Details -->
+    @if (step() === 1) {
+      <div class="auth-header fade-in">
+        <h2>Create Account</h2>
+        <p>Step 1 of 3: Enter your details</p>
+      </div>
+
+      @if (errorMessage()) {
+        <div class="error-banner">{{ errorMessage() }}</div>
+      }
+
+      <form [formGroup]="step1Form" (ngSubmit)="onSubmitStep1()" class="auth-form fade-in">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input 
+            id="email" 
+            type="email" 
+            formControlName="email" 
+            placeholder="Enter your email"
+            [class.invalid]="step1Form.get('email')?.invalid && step1Form.get('email')?.touched"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input 
+            id="password" 
+            type="password" 
+            formControlName="password" 
+            placeholder="Create a password (min 6 chars)"
+            [class.invalid]="step1Form.get('password')?.invalid && step1Form.get('password')?.touched"
+          />
+        </div>
+
+        <button type="submit" class="btn-primary" [disabled]="step1Form.invalid">
+          Continue
+        </button>
+      </form>
+
+      <div class="auth-footer fade-in">
+        <p>Already have an account? <a routerLink="/auth/login">Log In</a></p>
+      </div>
+    }
+
+    <!-- Step 2: OTP Verification -->
+    @if (step() === 2) {
+      <div class="auth-header fade-in">
+        <h2>Verify Email</h2>
+        <p>Step 2 of 3: Enter the 6-digit code sent to {{ step1Form.get('email')?.value }}</p>
+      </div>
+
+      <form [formGroup]="step2Form" (ngSubmit)="onSubmitStep2()" class="auth-form fade-in">
+        <div class="form-group">
+          <label for="otp">Security Code</label>
+          <input 
+            id="otp" 
+            type="text" 
+            maxlength="6"
+            formControlName="otp" 
+            placeholder="000000"
+            style="text-align: center; font-size: 1.5rem; letter-spacing: 0.5rem;"
+            [class.invalid]="step2Form.get('otp')?.invalid && step2Form.get('otp')?.touched"
+          />
+        </div>
+
+        <button type="submit" class="btn-primary" [disabled]="step2Form.invalid">
+          Verify
+        </button>
+      </form>
+
+      <div class="auth-footer fade-in">
+        @if (countdown() > 0) {
+          <p>Resend code in {{ countdown() }}s</p>
+        } @else {
+          <p>Didn't receive it? <a (click)="resendCode()" style="cursor: pointer;">Resend Code</a></p>
+        }
+      </div>
+    }
+
+    <!-- Step 3: Profile Setup -->
+    @if (step() === 3) {
+      <div class="auth-header fade-in">
+        <h2>Setup Profile</h2>
+        <p>Step 3 of 3: How should people find you?</p>
+      </div>
+
+      @if (errorMessage()) {
+        <div class="error-banner">{{ errorMessage() }}</div>
+      }
+
+      <form [formGroup]="step3Form" (ngSubmit)="onSubmitStep3()" class="auth-form fade-in">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <div class="username-wrapper">
+            <span class="at-symbol">&commat;</span>
+            <input 
+              id="username" 
+              type="text" 
+              formControlName="username" 
+              placeholder="unique_name"
+              [class.invalid]="step3Form.get('username')?.invalid && step3Form.get('username')?.touched"
+            />
+            @if (isCheckingUsername()) {
+              <span class="status-icon loading">↻</span>
+            } @else if (usernameAvailable() === true) {
+              <span class="status-icon success">✓</span>
+            } @else if (usernameAvailable() === false) {
+              <span class="status-icon error">✗</span>
+            }
+          </div>
+          @if (usernameAvailable() === false) {
+            <small class="text-danger">Username is already taken</small>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="displayName">Display Name</label>
+          <input 
+            id="displayName" 
+            type="text" 
+            formControlName="displayName" 
+            placeholder="E.g. John Doe / Company LLC"
+            [class.invalid]="step3Form.get('displayName')?.invalid && step3Form.get('displayName')?.touched"
+          />
+        </div>
+
+        <button type="submit" class="btn-primary" [disabled]="step3Form.invalid || usernameAvailable() === false || isLoading()">
+          @if (isLoading()) {
+            <span>Finishing Setup...</span>
+          } @else {
+            <span>Complete Registration</span>
+          }
+        </button>
+      </form>
+    }
+
+    <!-- Confirmation / E2E Phrase Screen -->
+    @if (step() === 4) {
+      <div class="auth-header fade-in">
+        <h2>Account Created!</h2>
+        <p class="text-danger">⚠️ CRITICAL: Save Your Recovery Phrase</p>
+      </div>
+
+      <div class="phrase-container fade-in">
+        <p class="crypto-warning">
+          Mess uses End-to-End Encryption. If you lose your device, this 12-word phrase is the <strong>ONLY</strong> way to restore your encrypted message history. We do not store this on our servers.
+        </p>
+        
+        <div class="recovery-box">
+          {{ mnemonic() }}
+        </div>
+      </div>
+
+      <button class="btn-primary fade-in" (click)="finishRegistration()" style="margin-top: 1.5rem;">
+        I have safely stored this phrase
+      </button>
+    }
+
+  </div>
+</div>

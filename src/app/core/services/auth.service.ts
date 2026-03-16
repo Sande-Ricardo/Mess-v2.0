@@ -1,0 +1,161 @@
+import { Injectable, inject, signal } from '@angular/core';
+import { 
+  Auth, 
+  authState, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signOut as fbSignOut,
+  signInWithPhoneNumber,
+  ApplicationVerifier,
+  ConfirmationResult,
+  sendEmailVerification,
+  UserCredential
+} from '@angular/fire/auth';
+import { FirebaseService } from './firebase.service';
+import { ref, get, set, child, update } from '@angular/fire/database';
+import { User, UserSettings } from '../models/user.model';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthService {
+  private readonly auth = inject(Auth);
+  private readonly fbService = inject(FirebaseService);
+
+  // Exposing user signal to the whole app
+  public readonly currentUser = signal<User | null>(null);
+
+  constructor() {
+    // Listen to Firebase abstract auth state
+    authState(this.auth).subscribe(async (fbUser) => {
+      if (fbUser) {
+        // Fetch custom profile from RTDB
+        const userRef = this.fbService.getUserRef(fbUser.uid);
+        const snapshot = await get(userRef);
+        if (snapshot.exists()) {
+          this.currentUser.set(snapshot.val() as User);
+        } else {
+          // If profile hasn't been written yet (e.g. during middle of registration block)
+          this.currentUser.set(null);
+        }
+      } else {
+        this.currentUser.set(null);
+      }
+    });
+  }
+
+  /**
+   * Checks if a username already exists.
+   */
+  public async checkUsernameExists(username: string): Promise<boolean> {
+    const usernameRef = child(this.fbService.rootRef, `usernames/${username}`);
+    const snapshot = await get(usernameRef);
+    return snapshot.exists();
+  }
+
+  /**
+   * Creates RTDB profile metadata after successful auth creation
+   */
+  private async createRTDBProfile(
+    uid: string, 
+    username: string, 
+    email: string, 
+    displayName: string, 
+    phoneNumber?: string
+  ): Promise<void> {
+    const timestamp = Date.now();
+    const settings: UserSettings = {
+      lastSeenVisibility: 'all',
+      readReceiptsEnabled: true,
+      avatarVisibility: 'all'
+    };
+
+    const newUser: User = {
+      uid,
+      username,
+      email,
+      phoneNumber: phoneNumber || undefined,
+      displayName,
+      createdAt: timestamp,
+      lastSeen: timestamp,
+      settings
+    };
+
+    // Transactionally write to usernames node and users node
+    // In standard RTDB, client-side we perform two writes unless using update.
+    const updates: { [key: string]: any } = {};
+    updates[`users/${uid}`] = newUser;
+    updates[`usernames/${username}`] = uid; // Reserve the username pointing to UID
+
+    await update(this.fbService.rootRef, updates);
+    // Update local signal explicitly immediately to avoid wait time
+    this.currentUser.set(newUser);
+  }
+
+  /**
+   * Register flow via Email and Password
+   */
+  public async registerWithEmail(email: string, password: string, username: string, displayName: string): Promise<void> {
+    const exists = await this.checkUsernameExists(username);
+    if (exists) {
+      throw new Error('username-taken');
+    }
+
+    const credentials = await createUserWithEmailAndPassword(this.auth, email, password);
+    await sendEmailVerification(credentials.user);
+
+    await this.createRTDBProfile(credentials.user.uid, username, email, displayName);
+  }
+
+  /**
+   * Step 1 of internal Phone Auth: Sends SMS OTP via verification application.
+   */
+  public async registerWithPhone(phoneNumber: string, appVerifier: ApplicationVerifier): Promise<ConfirmationResult> {
+    return signInWithPhoneNumber(this.auth, phoneNumber, appVerifier);
+  }
+
+  /**
+   * Step 2 of Phone Auth: Confirms OTP and sets up username / generic data.
+   */
+  public async verifyOTP(
+    confirmationResult: ConfirmationResult, 
+    code: string, 
+    username: string, 
+    displayName: string
+  ): Promise<void> {
+    const exists = await this.checkUsernameExists(username);
+    if (exists) {
+      throw new Error('username-taken');
+    }
+
+    const credentials = await confirmationResult.confirm(code);
+    
+    // Check if the user is already established, if not, create the profile
+    const userRef = this.fbService.getUserRef(credentials.user.uid);
+    const snapshot = await get(userRef);
+    if (!snapshot.exists()) {
+      await this.createRTDBProfile(
+        credentials.user.uid, 
+        username, 
+        credentials.user.email || '', // In SMS Auth, email is rarely present at start
+        displayName, 
+        credentials.user.phoneNumber || undefined
+      );
+    }
+  }
+
+  /**
+   * Standard Sign in
+   */
+  public async signIn(email: string, password: string): Promise<UserCredential> {
+    return signInWithEmailAndPassword(this.auth, email, password);
+  }
+
+  /**
+   * Ends session and clears everything
+   */
+  public async signOut(): Promise<void> {
+    await fbSignOut(this.auth);
+    this.currentUser.set(null);
+  }
+}
