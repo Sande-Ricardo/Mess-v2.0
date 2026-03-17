@@ -44,7 +44,7 @@ export class ChatService {
   }
 
   /**
-   * Ensures a conversation node exists between two users.
+   * Ensures a conversation node exists between two users and indexes it.
    */
   public async getOrCreateConversation(targetUid: string): Promise<string> {
     const currentUid = this.authService.currentUser()?.uid;
@@ -55,16 +55,76 @@ export class ChatService {
     
     const snapshot = await get(metadataRef);
     if (!snapshot.exists()) {
-      // Create it
+      // Create chat metadata
       const newConv: Omit<Conversation, 'id'> = {
         participants: { [currentUid]: true, [targetUid]: true },
         lastMessage: '',
         updatedAt: Date.now()
       };
-      await set(metadataRef, newConv);
+      
+      const updates: Record<string, any> = {};
+      updates[`conversations/${convId}/metadata`] = newConv;
+      // Write Index to both users
+      updates[`users/${currentUid}/conversations/${convId}`] = true;
+      updates[`users/${targetUid}/conversations/${convId}`] = true;
+      
+      await update(this.fbService.rootRef, updates);
     }
 
     return convId;
+  }
+
+  /**
+   * Get all active conversations for the current user.
+   * Joins the index with the metadata.
+   */
+  public getUserConversations(): Observable<Conversation[]> {
+    const currentUid = this.authService.currentUser()?.uid;
+    if (!currentUid) return new Observable<Conversation[]>(sub => sub.next([]));
+
+    const subject = new Subject<Conversation[]>();
+    const userConvsRef = child(this.fbService.rootRef, `users/${currentUid}/conversations`);
+
+    // Listen to the user's index of conversation IDs
+    onValue(userConvsRef, async (indexSnap) => {
+      if (!indexSnap.exists()) {
+        subject.next([]);
+        return;
+      }
+
+      const convIds = Object.keys(indexSnap.val());
+      const convs: Conversation[] = [];
+      const key = await this.getCryptoKey();
+
+      // Fetch metadata for each
+      for (const convId of convIds) {
+        const metaSnap = await get(child(this.fbService.rootRef, `conversations/${convId}/metadata`));
+        if (metaSnap.exists()) {
+          const data = metaSnap.val() as Omit<Conversation, 'id'>;
+          
+          let plainLastMsg = data.lastMessage;
+          if (plainLastMsg && plainLastMsg.length > 0) {
+            try {
+               plainLastMsg = await this.cryptoService.decryptData(plainLastMsg, key);
+            } catch (e) {
+               // Leave as encrypted string if fail
+            }
+          }
+
+          convs.push({
+            ...data,
+            id: convId,
+            lastMessage: plainLastMsg
+          });
+        }
+      }
+
+      // Sort by updatedAt desc
+      convs.sort((a, b) => b.updatedAt - a.updatedAt);
+      subject.next(convs);
+    });
+
+    return subject.asObservable();
   }
 
   /**

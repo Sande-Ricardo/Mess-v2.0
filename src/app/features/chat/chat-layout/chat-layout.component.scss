@@ -1,0 +1,50 @@
+.app-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: var(--bg-dark);
+}
+
+.sidebar-column {
+  height: 100%;
+  width: 100%;
+  z-index: 20; /* Keep sidebar above chat context menus if overflow happens */
+}
+
+.chat-column {
+  height: 100%;
+  width: 100%;
+  position: relative;
+  
+  /* Background pattern for the chat area empty state */
+  background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Responsive Mobile Rules */
+@media screen and (max-width: 768px) {
+  .app-layout {
+    display: flex; /* Switch from grid to flex for full width toggling */
+  }
+
+  /* 
+   * Active Route Handling Hack via CSS:
+   * Normally, Angular Router listens to events to hide/show structural directives.
+   * But a pure CSS approach is to conditionally display none based on a wrapper class 
+   * or by sizing the layout dynamically.
+   */
+
+  .sidebar-column {
+    flex: 1;
+    display: block; // Active by default
+  }
+
+  .chat-column {
+    flex: 1;
+    display: none; // Hidden by default on mobile unless a chat is selected
+  }
+
+  /* We will refine this active/inactive mobile view logic securely using TS routing classes later if needed. */
+}
