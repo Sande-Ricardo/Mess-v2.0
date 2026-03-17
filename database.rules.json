@@ -12,6 +12,12 @@
         ".write": "auth != null && !data.exists()"
       }
     },
+    "conversations": {
+      "$convId": {
+        ".read": "auth != null && data.child('metadata/participants/' + auth.uid).val() === true",
+        ".write": "auth != null && (data.child('metadata/participants/' + auth.uid).val() === true || newData.child('metadata/participants/' + auth.uid).val() === true)"
+      }
+    },
     ".read": false,
     ".write": false
   }
