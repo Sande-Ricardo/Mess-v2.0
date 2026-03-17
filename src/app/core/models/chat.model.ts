@@ -17,4 +17,5 @@ export interface Message {
   timestamp: number;
   quotedMessageId?: string; // Optional reply to
   reactions?: Record<string, string>; // { [uid]: emoji }
+  isEdited?: boolean; // Flag for edited messages
 }

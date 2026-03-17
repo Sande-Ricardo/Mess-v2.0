@@ -1,0 +1,91 @@
+<div class="message-row" [class.me]="isMine()">
+
+  <div class="bubble" [class.deleted]="message().type === 'deleted'">
+
+    <!-- Quoted Block -->
+    @if (quotedMessage() && message().type !== 'deleted') {
+    <div class="quoted-box">
+      <span class="quoted-name">{{ isMine() ? 'Tú' : 'Contacto' }}</span>
+      <span class="quoted-text">{{ quotedMessage()?.content }}</span>
+    </div>
+    }
+
+    <!-- Message Content -->
+    @if (message().type === 'deleted') {
+    <span class="content deleted-text">🚫 Mensaje eliminado</span>
+    } @else {
+    <span class="content">{{ message().content }}</span>
+    }
+
+    <!-- Footer of the bubble (Time, Status, Edit Flag) -->
+    <div class="bubble-footer">
+      @if (message().isEdited && message().type !== 'deleted') {
+      <span class="edited-flag">editado</span>
+      }
+      <span class="time">{{ message().timestamp | date:'shortTime' }}</span>
+
+      <!-- Delivery Status for own messages -->
+      @if (isMine() && message().type !== 'deleted') {
+      <span class="status-indicator" [ngClass]="message().status">
+        @if (message().status === 'sent') {
+        <i class="tick">✓</i>
+        } @else if (message().status === 'delivered') {
+        <i class="tick">✓✓</i>
+        } @else if (message().status === 'read') {
+        <i class="tick read">✓✓</i>
+        }
+      </span>
+      }
+    </div>
+
+    <!-- Reactions Badges -->
+    @if (reactionsList().length > 0 && message().type !== 'deleted') {
+    <div class="reactions-list">
+      @for (react of reactionsList(); track react.emoji) {
+      <div class="reaction-badge">
+        <span class="emoji">{{ react.emoji }}</span>
+        @if (react.count > 1) {
+        <span class="count">{{ react.count }}</span>
+        }
+      </div>
+      }
+    </div>
+    }
+
+  </div>
+
+  <!-- Native Context Menu Overlay -->
+  @if (showContextMenu()) {
+  <div class="context-menu-backdrop" (click)="onDocumentClick($event)"></div>
+  <div class="context-menu glass-panel" [style.left.px]="contextMenuPosition().x"
+    [style.top.px]="contextMenuPosition().y" (click)="$event.stopPropagation()">
+
+    @if (!showReactionPicker()) {
+    <ul>
+      @if (message().type !== 'deleted') {
+      <li (click)="onReply($event)"><span>↩️</span> Responder</li>
+      <li (click)="onCopy($event)"><span>📋</span> Copiar</li>
+      <li (click)="toggleReactionPicker($event)"><span>😀</span> Reaccionar</li>
+      }
+
+      @if (canEdit() && message().type !== 'deleted') {
+      <li (click)="onEdit($event)"><span>✏️</span> Editar</li>
+      }
+      @if (canDelete() && message().type !== 'deleted') {
+      <li class="danger" (click)="onDelete($event)"><span>🗑️</span> Eliminar para todos</li>
+      }
+    </ul>
+    }
+
+    @if (showReactionPicker()) {
+    <!-- Emoji Reaction Picker -->
+    <div class="reaction-picker">
+      @for (emoji of emojis; track emoji) {
+      <button class="emoji-btn" (click)="onReact(emoji, $event)">{{ emoji }}</button>
+      }
+    </div>
+    }
+  </div>
+  }
+
+</div>

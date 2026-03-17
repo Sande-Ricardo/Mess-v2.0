@@ -1,13 +1,13 @@
-import { Component, ElementRef, OnInit, ViewChild, ViewEncapsulation, effect, inject, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import { TextFieldModule } from '@angular/cdk/text-field';
+import { CommonModule } from '@angular/common';
+import { Component, OnInit, ViewChild, ViewEncapsulation, effect, inject, input } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
+import { Message } from '../../../core/models/chat.model';
+import { AuthService } from '../../../core/services/auth.service';
 import { ChatService } from '../../../core/services/chat.service';
 import { PresenceService } from '../../../core/services/presence.service';
-import { AuthService } from '../../../core/services/auth.service';
-import { Message } from '../../../core/models/chat.model';
 
 @Component({
   selector: 'app-chat-window',
@@ -19,7 +19,7 @@ import { Message } from '../../../core/models/chat.model';
 })
 export class ChatWindowComponent implements OnInit {
   public convId = input.required<string>();
-  
+
   private readonly chatService = inject(ChatService);
   private readonly presenceService = inject(PresenceService);
   public readonly authService = inject(AuthService);
@@ -33,7 +33,7 @@ export class ChatWindowComponent implements OnInit {
   public myUid = this.authService.currentUser()?.uid;
 
   // (Mock) Remote Contact Details based on convId and me
-  public contactName = 'Contact'; 
+  public contactName = 'Contact';
   public contactStatus = 'Online';
 
   // Signals for reactivity
