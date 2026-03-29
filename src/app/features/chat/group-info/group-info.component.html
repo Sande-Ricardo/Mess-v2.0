@@ -1,0 +1,87 @@
+<div class="group-info-sidebar" *ngIf="metadata()">
+  
+  <div class="header-section text-center">
+    <div class="avatar-lg mx-auto">
+      <img [src]="metadata()?.avatarUrl || 'assets/default-group.png'" alt="Group Avatar">
+    </div>
+    <h2 class="mt-3">{{ metadata()?.name }}</h2>
+    <p class="member-count">{{ members().length }} members</p>
+  </div>
+
+  <div class="section">
+    <h4>Description</h4>
+    <div class="desc-content" *ngIf="!isEditingDesc()">
+      <p>{{ metadata()?.description || 'No description provided.' }}</p>
+      <button class="icon-btn edit-btn" *ngIf="isAdmin()" (click)="enableDescEdit()">✏️ Edit</button>
+    </div>
+    
+    <div class="desc-editor" *ngIf="isEditingDesc()">
+      <textarea 
+        [(ngModel)]="editDescText" 
+        rows="3" 
+        placeholder="Group description..."
+        class="form-control mb-2"
+        maxlength="200"
+      ></textarea>
+      <div class="flex-actions justify-end">
+        <button class="btn btn-sm btn-ghost mr-2" (click)="isEditingDesc.set(false)">Cancel</button>
+        <button class="btn btn-sm btn-primary" (click)="saveDescription()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h4>Members</h4>
+    <div class="members-list">
+      <div class="member-item" *ngFor="let m of members()">
+        <img [src]="m.profile?.avatarUrl || 'assets/default-avatar.png'" class="avatar-sm" alt="m.profile?.displayName">
+        <div class="member-info flex-1">
+          <div class="name-row">
+            <span class="name">{{ m.profile?.displayName || 'Unknown User' }}</span>
+            <span class="badge" [class.admin]="m.role === 'admin'">{{ m.role }}</span>
+          </div>
+          <p class="joined text-xs">Joined {{ m.joinedAt | date:'shortDate' }}</p>
+        </div>
+        
+        <!-- Admin Options Dropdown / Buttons -->
+        <div class="admin-actions" *ngIf="isAdmin() && m.role !== 'admin'">
+          <div class="dropdown">
+            <button class="icon-btn">⋮</button>
+            <div class="dropdown-content">
+              <button (click)="promoteUser(m.uid)">Promote to Admin</button>
+              <button (click)="expelUser(m.uid)" class="danger">Expel User</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" *ngIf="isAdmin()">
+    <h4>Invite Link</h4>
+    <div class="invite-box" *ngIf="metadata()?.inviteToken; else noInvite">
+      <div class="link-display truncate">
+        domain.com/join/{{ metadata()?.inviteToken }}
+      </div>
+      <div class="invite-actions mt-2 flex gap-2">
+        <button class="btn btn-sm btn-outline flex-1" (click)="copyInviteLink()">Copy Link</button>
+        <button class="btn btn-sm btn-danger flex-1" (click)="revokeInvite()">Revoke</button>
+      </div>
+    </div>
+    <ng-template #noInvite>
+      <button class="btn btn-primary w-full" (click)="generateInvite()">Generate Invite Link</button>
+    </ng-template>
+  </div>
+
+  <div class="section">
+    <h4>Shared Media</h4>
+    <div class="media-grid">
+      <!-- Placholders for media content extracted from messages -->
+      <div class="media-placeholder"></div>
+      <div class="media-placeholder"></div>
+      <div class="media-placeholder"></div>
+      <div class="media-placeholder"></div>
+    </div>
+  </div>
+
+</div>

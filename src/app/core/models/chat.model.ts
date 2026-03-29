@@ -19,3 +19,20 @@ export interface Message {
   reactions?: Record<string, string>; // { [uid]: emoji }
   isEdited?: boolean; // Flag for edited messages
 }
+
+export interface GroupMetadata {
+  name: string;
+  avatarUrl?: string;
+  description?: string;
+  createdAt: number;
+  createdBy: string;
+  memberCount: number;
+  inviteToken?: string;
+}
+
+export type GroupMemberRole = 'admin' | 'member';
+
+export interface GroupMember {
+  role: GroupMemberRole;
+  joinedAt: number;
+}

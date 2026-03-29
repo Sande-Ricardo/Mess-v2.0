@@ -1,0 +1,96 @@
+<div class="modal-overlay" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Create New Group</h2>
+      <button class="close-btn" (click)="closeModal()">&times;</button>
+    </div>
+
+    <!-- Step 1: Group Name -->
+    <div class="step-container" *ngIf="currentStep() === 1">
+      <h3>Step 1: Group Name</h3>
+      <div class="input-group">
+        <label for="grpName">Name your group</label>
+        <input 
+          id="grpName" 
+          type="text" 
+          [ngModel]="groupName()" 
+          (ngModelChange)="groupName.set($event)"
+          maxlength="50"
+          placeholder="e.g. Project Apollo Team"
+          autofocus
+        />
+        <div class="char-counter" [class.max]="groupName().length === 50">
+          {{ groupName().length }} / 50
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Avatar -->
+    <div class="step-container" *ngIf="currentStep() === 2">
+      <h3>Step 2: Group Photo</h3>
+      <p class="subtitle">Upload a photo to give your group a distinct identity (optional).</p>
+      
+      <div class="avatar-upload-zone">
+        <div class="preview-circle" *ngIf="avatarPreview()">
+          <img [src]="avatarPreview()" alt="Group Avatar Preview" />
+        </div>
+        <div class="preview-circle placeholder" *ngIf="!avatarPreview()">
+          <span>📸</span>
+        </div>
+        
+        <input type="file" id="groupPhoto" accept="image/*" (change)="onFileSelected($event)" style="display:none" #fileInput>
+        <button class="secondary-btn btn-sm" (click)="fileInput.click()">
+          Choose Image
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 3: Members -->
+    <div class="step-container" *ngIf="currentStep() === 3">
+      <h3>Step 3: Add Initial Members</h3>
+      
+      <input 
+        type="text" 
+        class="search-input"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+        placeholder="Search users..." 
+      />
+
+      <div class="users-list">
+        <div 
+          class="user-item" 
+          *ngFor="let u of filteredUsers()"
+          (click)="toggleUserSelection(u.uid)"
+        >
+          <img [src]="u.avatarUrl || 'assets/default-avatar.png'" alt="avatar" class="sm-avatar" />
+          <div class="user-info">
+            <span class="display-name">{{ u.displayName }}</span>
+            <span class="username">@{{ u.username }}</span>
+          </div>
+          <div class="checkbox" [class.checked]="selectedUids().has(u.uid)">
+            <span *ngIf="selectedUids().has(u.uid)">✓</span>
+          </div>
+        </div>
+        
+        <div class="no-results" *ngIf="filteredUsers().length === 0">
+          No users found.
+        </div>
+      </div>
+      
+      <div class="selection-count">
+        {{ selectedUids().size }} member(s) selected
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="secondary-btn" *ngIf="currentStep() > 1" (click)="prevStep()" [disabled]="isSubmitting()">Back</button>
+      <button class="secondary-btn" *ngIf="currentStep() === 1" (click)="closeModal()">Cancel</button>
+
+      <button class="primary-btn" *ngIf="currentStep() < 3" (click)="nextStep()" [disabled]="currentStep() === 1 && !groupName().trim()">Next</button>
+      <button class="primary-btn" *ngIf="currentStep() === 3" (click)="finishCreate()" [disabled]="isSubmitting()">
+        {{ isSubmitting() ? 'Creating...' : 'Create Group' }}
+      </button>
+    </div>
+  </div>
+</div>
