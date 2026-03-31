@@ -1,5 +1,5 @@
 <div class="sidebar-container glass-panel">
-  
+
   <div class="sidebar-header">
     <div class="title-row">
       <h2>Chats</h2>
@@ -10,45 +10,43 @@
 
     <div class="search-box">
       <span class="icon">🔍</span>
-      <input 
-        id="searchInput"
-        type="text" 
-        placeholder="Search (Ctrl + K)" 
-        [ngModel]="searchQuery()" 
-        (ngModelChange)="searchQuery.set($event)"
-      />
+      <input id="searchInput" type="text" placeholder="Search (Ctrl + K)" [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)" />
     </div>
   </div>
 
   <div class="conversations-wrapper">
     @if (filteredConversations().length === 0) {
-      <div class="empty-state">
-        <p>No chats found.</p>
-      </div>
+    <div class="empty-state">
+      <p>No chats found.</p>
+    </div>
     } @else {
-      @for (conv of filteredConversations(); track conv.id) {
-        
-        <a [routerLink]="['/chat', conv.id]" routerLinkActive="active" class="conversation-item fade-in">
-          <div class="avatar-mock">
-            {{ getContactId(conv)?.charAt(0) | uppercase }}
-          </div>
-          
-          <div class="contentArea">
-            <div class="top-row">
-              <span class="name">Contact {{ getContactId(conv)?.substring(0, 4) }}</span>
-              <span class="time">{{ conv.updatedAt | date:'shortTime' }}</span>
-            </div>
-            
-            <div class="bottom-row">
-              <!-- Truncate last message preview to 40 chars -->
-              <span class="preview">{{ conv.lastMessage | slice:0:40 }}{{ conv.lastMessage?.length > 40 ? '...' : '' }}</span>
-              <!-- Mock unread badge for UI structure -->
-              <!-- <span class="badge">2</span> -->
-            </div>
-          </div>
-        </a>
+    @for (conv of filteredConversations(); track conv.id) {
 
-      }
+    <a [routerLink]="['/chat', conv.id]" routerLinkActive="active" class="conversation-item fade-in">
+      <div class="avatar-mock">
+        {{ getContactId(conv)?.charAt(0) | uppercase }}
+      </div>
+
+      <div class="contentArea">
+        <div class="top-row">
+          <span class="name">Contact {{ getContactId(conv)?.substring(0, 4) }}</span>
+          <span class="time">{{ conv.updatedAt | date:'shortTime' }}</span>
+        </div>
+
+        <div class="bottom-row">
+          <!-- Truncate last message preview to 40 chars -->
+          @if (typeof conv.lastMessage === 'string'){
+          <span class="preview">{{ conv.lastMessage | slice:0:40 }}{{ conv.lastMessage.length > 40 ? '...' : ''
+            }}</span>
+          }
+          <!-- Mock unread badge for UI structure -->
+          <!-- <span class="badge">2</span> -->
+        </div>
+      </div>
+    </a>
+
+    }
     }
   </div>
 

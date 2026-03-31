@@ -8,12 +8,15 @@ import { Message } from '../../../core/models/chat.model';
 import { AuthService } from '../../../core/services/auth.service';
 import { ChatService } from '../../../core/services/chat.service';
 import { PresenceService } from '../../../core/services/presence.service';
+import { VoiceRecorderComponent } from '../voice-recorder/voice-recorder.component';
+import { VoiceMessageComponent } from '../voice-message/voice-message.component';
 
 @Component({
   selector: 'app-chat-window',
   standalone: true,
-  imports: [CommonModule, FormsModule, ScrollingModule, TextFieldModule],
+  imports: [CommonModule, FormsModule, ScrollingModule, TextFieldModule, VoiceRecorderComponent, VoiceMessageComponent],
   templateUrl: './chat-window.component.html',
+
   styleUrl: './chat-window.component.scss',
   encapsulation: ViewEncapsulation.None
 })
@@ -31,6 +34,7 @@ export class ChatWindowComponent implements OnInit {
   public messages = [] as Message[];
   public typingUsers = [] as string[];
   public myUid = this.authService.currentUser()?.uid;
+  public isRecordingVoice = false;
 
   // (Mock) Remote Contact Details based on convId and me
   public contactName = 'Contact';

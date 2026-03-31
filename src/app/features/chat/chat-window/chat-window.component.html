@@ -26,7 +26,15 @@
         <div class="bubble" [class.deleted]="msg.type === 'deleted'">
           
           <ng-container *ngIf="msg.type !== 'deleted'; else deletedTpl">
-            <span class="content">{{ msg.content }}</span>
+            
+            <ng-container *ngIf="msg.type === 'voice'; else textMsg">
+              <app-voice-message [audioUrl]="msg.content"></app-voice-message>
+            </ng-container>
+            
+            <ng-template #textMsg>
+              <span class="content">{{ msg.content }}</span>
+            </ng-template>
+
             <span class="time">{{ msg.timestamp | date:'shortTime' }}</span>
           </ng-container>
           
@@ -50,31 +58,43 @@
 
   <!-- Compose Footer -->
   <footer class="chat-footer glass-panel">
-    <button class="icon-btn attachment">
-      <!-- Mock Icon -->
-      📎
-    </button>
     
-    <div class="input-wrapper">
-      <textarea 
-        cdkTextareaAutosize
-        #autosize="cdkTextareaAutosize"
-        cdkAutosizeMinRows="1"
-        cdkAutosizeMaxRows="5"
-        class="message-input"
-        placeholder="Escribe un mensaje..."
-        [(ngModel)]="newMessage"
-        (input)="onInput()"
-        (keydown)="onKeyDown($event)"></textarea>
-    </div>
+    <ng-container *ngIf="!isRecordingVoice; else recordingTpl">
+      <button class="icon-btn attachment">
+        <!-- Mock Icon -->
+        📎
+      </button>
+      
+      <div class="input-wrapper">
+        <textarea 
+          cdkTextareaAutosize
+          #autosize="cdkTextareaAutosize"
+          cdkAutosizeMinRows="1"
+          cdkAutosizeMaxRows="5"
+          class="message-input"
+          placeholder="Escribe un mensaje..."
+          [(ngModel)]="newMessage"
+          (input)="onInput()"
+          (keydown)="onKeyDown($event)"></textarea>
+      </div>
 
-    <button class="icon-btn mic" *ngIf="!newMessage.trim()">
-      🎤
-    </button>
+      <button class="icon-btn mic" *ngIf="!newMessage.trim()" (click)="isRecordingVoice = true">
+        🎤
+      </button>
 
-    <button class="icon-btn send" *ngIf="newMessage.trim()" (click)="sendMessage()">
-      ➤
-    </button>
+      <button class="icon-btn send" *ngIf="newMessage.trim()" (click)="sendMessage()">
+        ➤
+      </button>
+    </ng-container>
+
+    <ng-template #recordingTpl>
+      <app-voice-recorder 
+        class="flex-1"
+        [chatContextId]="convId()" 
+        (dismiss)="isRecordingVoice = false">
+      </app-voice-recorder>
+    </ng-template>
+
   </footer>
 
 </div>

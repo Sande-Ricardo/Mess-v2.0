@@ -1,0 +1,31 @@
+<div class="voice-recorder-container">
+  
+  <div class="recording-indicator" *ngIf="!isUploading">
+    <div class="blinking-dot"></div>
+    <span class="recording-time">{{ formattedTime }}</span>
+  </div>
+
+  <div class="upload-indicator" *ngIf="isUploading">
+    <span class="spinner"></span>
+    <span class="upload-text">Sending...</span>
+  </div>
+
+  <div class="waveform-container" *ngIf="!isUploading">
+    <div 
+      class="waveform-bar" 
+      *ngFor="let barHeight of bars; let i = index"
+      [style.height.%]="barHeight * 100"
+    ></div>
+  </div>
+
+  <div class="actions">
+    <button class="btn-action btn-cancel" (click)="onCancel()" title="Delete Recording" [disabled]="isUploading">
+      <span>✕</span>
+    </button>
+    
+    <button class="btn-action btn-confirm" (click)="onConfirm()" title="Send Voice Message" [disabled]="isUploading">
+      <span>✓</span>
+    </button>
+  </div>
+  
+</div>

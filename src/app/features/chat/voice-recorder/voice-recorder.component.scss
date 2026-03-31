@@ -1,0 +1,114 @@
+.voice-recorder-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 16px;
+  background: rgba(30, 30, 36, 0.95);
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  gap: 16px;
+  height: 50px;
+}
+
+.recording-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 60px;
+}
+
+.blinking-dot {
+  width: 10px;
+  height: 10px;
+  background-color: #ff4c4c;
+  border-radius: 50%;
+  animation: blink 1s infinite alternate;
+}
+
+@keyframes blink {
+  from { opacity: 1; }
+  to { opacity: 0.3; }
+}
+
+.recording-time {
+  font-family: monospace;
+  font-size: 0.95rem;
+  color: #ff4c4c;
+  font-weight: bold;
+}
+
+.waveform-container {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  height: 30px;
+  overflow: hidden;
+  position: relative;
+}
+
+.waveform-bar {
+  flex: 1;
+  background-color: var(--primary-color, #6b4cff);
+  min-height: 2px;
+  max-height: 100%;
+  border-radius: 1px;
+  transition: height 0.05s ease;
+}
+
+.upload-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 10px;
+  color: var(--primary-color, #6b4cff);
+  
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(107, 76, 255, 0.3);
+    border-top-color: var(--primary-color, #6b4cff);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-action {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: white;
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  &.btn-cancel {
+    background: rgba(255, 76, 76, 0.2);
+    color: #ff4c4c;
+    &:hover:not(:disabled) { background: rgba(255, 76, 76, 0.4); }
+  }
+  
+  &.btn-confirm {
+    background: var(--primary-color, #6b4cff);
+    &:hover:not(:disabled) { opacity: 0.9; transform: scale(1.05); }
+  }
+}

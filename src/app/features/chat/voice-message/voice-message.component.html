@@ -1,0 +1,31 @@
+<div class="voice-message-player">
+  <button class="play-btn" (click)="togglePlay()">
+    <span *ngIf="!isPlaying">▶</span>
+    <span *ngIf="isPlaying">⏸</span>
+  </button>
+
+  <div class="player-body">
+    
+    <div class="waveform-container" #progressBar (click)="seek($event, progressBar)">
+      
+      <!-- Base Waveform Array -->
+      <div 
+        class="wave-bar" 
+        *ngFor="let h of staticWaveform; let i = index"
+        [style.height.%]="h * 100"
+        [class.played]="(i / staticWaveform.length * 100) <= progressPercent"
+      ></div>
+      
+    </div>
+
+    <div class="time-controls">
+      <span class="timer">
+        {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
+      </span>
+      <button class="speed-btn" (click)="toggleSpeed()">
+        {{ playbackRate }}x
+      </button>
+    </div>
+
+  </div>
+</div>
