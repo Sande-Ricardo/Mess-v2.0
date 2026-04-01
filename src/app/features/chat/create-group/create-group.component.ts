@@ -1,13 +1,14 @@
-import { Component, inject, signal, computed, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, computed, EventEmitter, inject, Output, signal } from '@angular/core';
+import { child, get } from '@angular/fire/database';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { GroupService } from '../../../core/services/group.service';
+import { firstValueFrom } from 'rxjs';
+import { User } from '../../../core/models/user.model';
+import { AuthService } from '../../../core/services/auth.service';
 import { CloudinaryService } from '../../../core/services/cloudinary.service';
 import { FirebaseService } from '../../../core/services/firebase.service';
-import { AuthService } from '../../../core/services/auth.service';
-import { get, child } from '@angular/fire/database';
-import { User } from '../../../core/models/user.model';
+import { GroupService } from '../../../core/services/group.service';
 
 @Component({
   selector: 'app-create-group',
@@ -43,8 +44,8 @@ export class CreateGroupComponent {
   public filteredUsers = computed(() => {
     const term = this.searchQuery().toLowerCase();
     const myUid = this.authService.currentUser()?.uid;
-    return this.users().filter(u => 
-      u.uid !== myUid && 
+    return this.users().filter(u =>
+      u.uid !== myUid &&
       (u.displayName.toLowerCase().includes(term) || u.username.toLowerCase().includes(term))
     );
   });
@@ -100,14 +101,15 @@ export class CreateGroupComponent {
       let avatarUrl: string | undefined = undefined;
       const file = this.selectedFile();
       if (file) {
-         avatarUrl = await this.cloudinaryService.uploadImage(file);
+        const uploadResult = await firstValueFrom(this.cloudinaryService.uploadFile(file, 'group-avatars'));
+        avatarUrl = uploadResult.secureUrl;
       }
 
       const groupId = await this.groupService.createGroup(this.groupName(), avatarUrl);
 
       // Add selected members sequentially (or could be Promise.all)
       for (const uid of this.selectedUids()) {
-         await this.groupService.addMember(groupId, uid);
+        await this.groupService.addMember(groupId, uid);
       }
 
       this.closeModal();

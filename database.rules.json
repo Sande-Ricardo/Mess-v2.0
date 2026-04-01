@@ -41,6 +41,12 @@
         }
       }
     },
+    "calls": {
+      "$callId": {
+        ".read": "auth != null && (data.child('caller').val() === auth.uid || data.child('callee').val() === auth.uid || newData.child('caller').val() === auth.uid || newData.child('callee').val() === auth.uid)",
+        ".write": "auth != null && (!data.exists() || data.child('caller').val() === auth.uid || data.child('callee').val() === auth.uid || newData.child('caller').val() === auth.uid || newData.child('callee').val() === auth.uid)"
+      }
+    },
     "inviteTokens": {
       "$token": {
         ".read": "auth != null",
