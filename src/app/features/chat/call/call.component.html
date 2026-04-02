@@ -1,0 +1,38 @@
+<div class="call-float-wrapper" cdkDrag *ngIf="isVisible()">
+  
+  <div class="draggable-handle" cdkDragHandle>
+    <span class="dots">::</span>
+    <span class="title">Active Call</span>
+    <div class="security">🔒 E2E</div>
+  </div>
+
+  <div class="video-container">
+    
+    <!-- Remote Video Background -->
+    <video #remoteVideo autoplay playsinline class="remote-video" [muted]="false"></video>
+
+    <!-- Local Video Thumbnail PIP -->
+    <div class="local-pip" cdkDrag>
+      <video #localVideo autoplay playsinline muted class="local-video"></video>
+      <div class="muted-overlay" *ngIf="isMuted()">🔇</div>
+    </div>
+
+    <!-- UI Overlay Info -->
+    <div class="overlay-info">
+      <div class="timer">{{ timer() }}</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="ctrl-btn" [class.off]="isMuted()" (click)="toggleMute()" title="Mute (Ctrl+M)">
+      {{ isMuted() ? '🔇' : '🎤' }}
+    </button>
+    <button class="ctrl-btn" [class.off]="isVideoOff()" (click)="toggleVideo()" title="Camera">
+      {{ isVideoOff() ? '🚫📷' : '📹' }}
+    </button>
+    <button class="ctrl-btn hangup" (click)="hangup()" title="Hangup (Ctrl+W)">
+      📞
+    </button>
+  </div>
+
+</div>

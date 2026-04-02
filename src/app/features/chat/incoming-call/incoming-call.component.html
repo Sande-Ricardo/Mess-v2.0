@@ -1,0 +1,28 @@
+<div class="incoming-call-banner" *ngIf="isVisible()">
+  
+  <div class="call-info">
+    <div class="avatar-ring">
+      <div class="avatar">
+        {{ callerName().charAt(0) | uppercase }}
+      </div>
+    </div>
+    <div class="details">
+      <h3>{{ callerName() }}</h3>
+      <span class="type-indicator">
+        Incoming {{ currentCall()?.type }} call...
+      </span>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn decline" (click)="decline()">
+      ✕ Decline
+    </button>
+    <button class="btn answer" (click)="answer()">
+      <span *ngIf="currentCall()?.type === 'video'">📹</span>
+      <span *ngIf="currentCall()?.type === 'voice'">📞</span>
+      Answer
+    </button>
+  </div>
+
+</div>

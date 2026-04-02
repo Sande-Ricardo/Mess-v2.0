@@ -6,6 +6,12 @@ import { FirebaseService } from './firebase.service';
 export type CallStatus = 'ringing' | 'active' | 'ended' | 'declined';
 export type CallType = 'voice' | 'video';
 
+export interface IncomingCallPayload {
+  callId: string;
+  caller: string;
+  type: CallType;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -15,6 +21,7 @@ export class WebRTCService {
 
   public localStream: WritableSignal<MediaStream | null> = signal(null);
   public remoteStream: WritableSignal<MediaStream | null> = signal(null);
+  public incomingCall: WritableSignal<IncomingCallPayload | null> = signal(null);
 
   private pc: RTCPeerConnection | null = null;
   public currentCallId: string | null = null;
@@ -226,5 +233,66 @@ export class WebRTCService {
       this.remoteStream()!.getTracks().forEach(t => t.stop());
       this.remoteStream.set(null);
     }
+    this.incomingCall.set(null);
+  }
+
+  /**
+   * Toggles the audio track (mute/unmute).
+   */
+  public toggleAudio(): boolean {
+    const stream = this.localStream();
+    if (!stream) return false;
+    const audioTrack = stream.getAudioTracks()[0];
+    if (audioTrack) {
+      audioTrack.enabled = !audioTrack.enabled;
+      return audioTrack.enabled;
+    }
+    return false;
+  }
+
+  /**
+   * Toggles the video track.
+   */
+  public toggleVideo(): boolean {
+    const stream = this.localStream();
+    if (!stream) return false;
+    const videoTrack = stream.getVideoTracks()[0];
+    if (videoTrack) {
+      videoTrack.enabled = !videoTrack.enabled;
+      return videoTrack.enabled;
+    }
+    return false;
+  }
+
+  /**
+   * Listens for any incoming calls globally for this user.
+   */
+  public initIncomingListener() {
+    const defaultUid = this.authService.currentUser()?.uid;
+    if (!defaultUid) return;
+
+    // We fetch calls where status is ringing. 
+    // In Firebase this requires indexing, but for MVP we observe the calls node locally or just new child added
+    const callsRef = child(this.fbService.rootRef, 'calls');
+    onChildAdded(callsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data && data.callee === defaultUid && data.status === 'ringing') {
+         this.incomingCall.set({
+           callId: snapshot.key as string,
+           caller: data.caller,
+           type: data.type
+         });
+      }
+    });
+
+    onValue(callsRef, (snapshot) => {
+       const calls = snapshot.val() || {};
+       const currentCall = this.incomingCall();
+       if (currentCall && calls[currentCall.callId]) {
+         if (calls[currentCall.callId].status !== 'ringing') {
+           this.incomingCall.set(null);
+         }
+       }
+    });
   }
 }

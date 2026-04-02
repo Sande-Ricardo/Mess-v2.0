@@ -47,6 +47,12 @@
         ".write": "auth != null && (!data.exists() || data.child('caller').val() === auth.uid || data.child('callee').val() === auth.uid || newData.child('caller').val() === auth.uid || newData.child('callee').val() === auth.uid)"
       }
     },
+    "group-calls": {
+      "$groupId": {
+        ".read": "auth != null && root.child('groups').child($groupId).child('members').child(auth.uid).exists()",
+        ".write": "auth != null && root.child('groups').child($groupId).child('members').child(auth.uid).exists()"
+      }
+    },
     "inviteTokens": {
       "$token": {
         ".read": "auth != null",
