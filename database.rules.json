@@ -3,7 +3,12 @@
     "users": {
       "$uid": {
         ".read": "auth != null",
-        ".write": "auth != null && auth.uid == $uid"
+        ".write": "auth != null && auth.uid == $uid",
+        "conversations": {
+          "$convId": {
+            ".write": "auth != null"
+          }
+        }
       }
     },
     "usernames": {
@@ -14,23 +19,23 @@
     },
     "conversations": {
       "$convId": {
-        ".read": "auth != null && data.child('metadata/participants/' + auth.uid).val() === true",
-        ".write": "auth != null && (data.child('metadata/participants/' + auth.uid).val() === true || newData.child('metadata/participants/' + auth.uid).val() === true)"
+        ".read": "auth != null && data.child('metadata/participants/' + auth.uid).val() == true",
+        ".write": "auth != null && (data.child('metadata/participants/' + auth.uid).val() == true || newData.child('metadata/participants/' + auth.uid).val() == true)"
       }
     },
     "groups": {
       "$groupId": {
         "metadata": {
           ".read": "auth != null && root.child('groups').child($groupId).child('members').child(auth.uid).exists()",
-          ".write": "auth != null && (!data.exists() || root.child('groups').child($groupId).child('members').child(auth.uid).child('role').val() === 'admin')",
+          ".write": "auth != null && (!data.exists() || root.child('groups').child($groupId).child('members').child(auth.uid).child('role').val() == 'admin')",
           "memberCount": {
-             ".validate": "newData.isNumber() && newData.val() <= 256"
+            ".validate": "newData.isNumber() && newData.val() <= 256"
           }
         },
         "members": {
           "$uid": {
             ".read": "auth != null && root.child('groups').child($groupId).child('members').child(auth.uid).exists()",
-            ".write": "auth != null && (root.child('groups').child($groupId).child('members').child(auth.uid).child('role').val() === 'admin' || (auth.uid === $uid && !newData.exists()) || !root.child('groups').child($groupId).child('metadata').exists())"
+            ".write": "auth != null && (root.child('groups').child($groupId).child('members').child(auth.uid).child('role').val() == 'admin' || (auth.uid == $uid && !newData.exists()) || !root.child('groups').child($groupId).child('metadata').exists())"
           }
         },
         "messages": {
@@ -43,8 +48,8 @@
     },
     "calls": {
       "$callId": {
-        ".read": "auth != null && (data.child('caller').val() === auth.uid || data.child('callee').val() === auth.uid || newData.child('caller').val() === auth.uid || newData.child('callee').val() === auth.uid)",
-        ".write": "auth != null && (!data.exists() || data.child('caller').val() === auth.uid || data.child('callee').val() === auth.uid || newData.child('caller').val() === auth.uid || newData.child('callee').val() === auth.uid)"
+        ".read": "auth != null && (data.child('caller').val() == auth.uid || data.child('callee').val() == auth.uid)",
+        ".write": "auth != null && (!data.exists() || data.child('caller').val() == auth.uid || data.child('callee').val() == auth.uid || newData.child('caller').val() == auth.uid || newData.child('callee').val() == auth.uid)"
       }
     },
     "group-calls": {
@@ -63,11 +68,11 @@
       "$convId": {
         ".read": "auth != null",
         "$uid": {
-          ".write": "auth != null && auth.uid === $uid"
+          ".write": "auth != null && auth.uid == $uid"
         }
       }
     },
-    ".read": false,
-    ".write": false
+    ".read": "false",
+    ".write": "false"
   }
 }

@@ -1,51 +1,95 @@
 <div class="sidebar-container glass-panel">
 
+  <!-- Header -->
   <div class="sidebar-header">
     <div class="title-row">
       <h2>Chats</h2>
-      <button class="icon-btn new-chat">
-        📝
-      </button>
+      <button class="icon-btn new-chat" title="New conversation">📝</button>
     </div>
 
+    <!-- Conversation filter search -->
+    @if (conversations().length > 0) {
     <div class="search-box">
       <span class="icon">🔍</span>
       <input id="searchInput" type="text" placeholder="Search (Ctrl + K)" [ngModel]="searchQuery()"
         (ngModelChange)="searchQuery.set($event)" />
     </div>
+    }
   </div>
 
+  <!-- ──────── USER SEARCH ──────── -->
+  <!-- Shown prominently when no conversations exist, shown as secondary field otherwise -->
+  <div class="user-search-section" [class.empty-mode]="conversations().length === 0">
+    @if (conversations().length === 0) {
+    <div class="empty-hero">
+      <p class="empty-title">Start a conversation</p>
+      <p class="empty-sub">Search for a user by their username to start messaging.</p>
+    </div>
+    }
+
+    <div class="user-search-box" [class.focused]="userSearchQuery().length > 0">
+      <span class="icon">👤</span>
+      <input id="userSearchInput" type="text"
+        [placeholder]="conversations().length === 0 ? 'Find user by @username...' : 'New chat by @username'"
+        [ngModel]="userSearchQuery()" (ngModelChange)="onUserSearchInput($event)" />
+      @if (isSearching()) {
+      <span class="spinner">⏳</span>
+      }
+    </div>
+
+    <!-- Search result -->
+    @if (userSearchQuery().length > 0) {
+    <div class="search-result-panel">
+      @if (isSearching()) {
+      <div class="result-row skeleton">Searching...</div>
+      } @else if (foundUserResult()) {
+      <div class="result-row found" (click)="startChat(foundUserResult()!)">
+        <div class="avatar-result">
+          {{ foundUserResult()!.displayName.charAt(0) | uppercase }}
+        </div>
+        <div class="result-info">
+          <span class="result-name">{{ foundUserResult()!.displayName }}</span>
+          <span class="result-username">&#64;{{ foundUserResult()!.username }}</span>
+        </div>
+        <span class="start-chat-arrow">→</span>
+      </div>
+      } @else if (searchNotFound()) {
+      <div class="result-row not-found">No user found for "{{ userSearchQuery() }}"</div>
+      }
+    </div>
+    }
+  </div>
+
+  <!-- ──────── CONVERSATION LIST ──────── -->
   <div class="conversations-wrapper">
+    @if (conversations().length > 0) {
     @if (filteredConversations().length === 0) {
     <div class="empty-state">
-      <p>No chats found.</p>
+      <p>No chats match "{{ searchQuery() }}".</p>
     </div>
     } @else {
     @for (conv of filteredConversations(); track conv.id) {
-
     <a [routerLink]="['/chat', conv.id]" routerLinkActive="active" class="conversation-item fade-in">
       <div class="avatar-mock">
-        {{ getContactId(conv)?.charAt(0) | uppercase }}
+        {{ getContactInitial(conv) }}
       </div>
 
       <div class="contentArea">
         <div class="top-row">
-          <span class="name">Contact {{ getContactId(conv)?.substring(0, 4) }}</span>
+          <span class="name">{{ getContactName(conv) }}</span>
           <span class="time">{{ conv.updatedAt | date:'shortTime' }}</span>
         </div>
 
         <div class="bottom-row">
-          <!-- Truncate last message preview to 40 chars -->
-          @if (typeof conv.lastMessage === 'string'){
-          <span class="preview">{{ conv.lastMessage | slice:0:40 }}{{ conv.lastMessage.length > 40 ? '...' : ''
-            }}</span>
+          @if (typeof conv.lastMessage === 'string') {
+          <span class="preview">
+            {{ conv.lastMessage | slice:0:40 }}{{ conv.lastMessage.length > 40 ? '...' : '' }}
+          </span>
           }
-          <!-- Mock unread badge for UI structure -->
-          <!-- <span class="badge">2</span> -->
         </div>
       </div>
     </a>
-
+    }
     }
     }
   </div>
@@ -62,11 +106,7 @@
       </div>
     </div>
 
-    <button
-      id="logoutBtn"
-      class="logout-btn"
-      title="Sign out"
-      (click)="onSignOut()">
+    <button id="logoutBtn" class="logout-btn" title="Sign out" (click)="onSignOut()">
       <span>⏻</span>
     </button>
   </div>

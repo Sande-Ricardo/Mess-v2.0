@@ -2,8 +2,10 @@ import { Injectable, inject } from '@angular/core';
 import { FirebaseService } from './firebase.service';
 import { CryptoService } from './crypto.service';
 import { AuthService } from './auth.service';
+import { authState } from '@angular/fire/auth';
 import { ref, set, update, get, child, onValue, off } from '@angular/fire/database';
 import { Observable, Subject } from 'rxjs';
+import { User as FirebaseUser } from '@angular/fire/auth';
 import { Conversation, Message, MessageStatus, MessageType } from '../models/chat.model';
 
 @Injectable({
@@ -76,55 +78,68 @@ export class ChatService {
 
   /**
    * Get all active conversations for the current user.
-   * Joins the index with the metadata.
+   * Reactive to auth state — starts the RTDB listener only after auth resolves.
    */
   public getUserConversations(): Observable<Conversation[]> {
-    const currentUid = this.authService.currentUser()?.uid;
-    if (!currentUid) return new Observable<Conversation[]>(sub => sub.next([]));
+    return new Observable<Conversation[]>(subscriber => {
+      let rtdbUnsubscribe: (() => void) | null = null;
 
-    const subject = new Subject<Conversation[]>();
-    const userConvsRef = child(this.fbService.rootRef, `users/${currentUid}/conversations`);
+      // Wait for Firebase auth to resolve before setting up the RTDB listener
+      const authUnsub = authState(this.fbService.auth).subscribe(async (fbUser: FirebaseUser | null) => {
+        // Tear down previous RTDB listener if user changed
+        if (rtdbUnsubscribe) {
+          rtdbUnsubscribe();
+          rtdbUnsubscribe = null;
+        }
 
-    // Listen to the user's index of conversation IDs
-    onValue(userConvsRef, async (indexSnap) => {
-      if (!indexSnap.exists()) {
-        subject.next([]);
-        return;
-      }
+        if (!fbUser) {
+          subscriber.next([]);
+          return;
+        }
 
-      const convIds = Object.keys(indexSnap.val());
-      const convs: Conversation[] = [];
-      const key = await this.getCryptoKey();
+        const currentUid = fbUser.uid;
+        const userConvsRef = child(this.fbService.rootRef, `users/${currentUid}/conversations`);
 
-      // Fetch metadata for each
-      for (const convId of convIds) {
-        const metaSnap = await get(child(this.fbService.rootRef, `conversations/${convId}/metadata`));
-        if (metaSnap.exists()) {
-          const data = metaSnap.val() as Omit<Conversation, 'id'>;
-          
-          let plainLastMsg = data.lastMessage;
-          if (plainLastMsg && plainLastMsg.length > 0) {
-            try {
-               plainLastMsg = await this.cryptoService.decryptData(plainLastMsg, key);
-            } catch (e) {
-               // Leave as encrypted string if fail
+        // onValue returns the unsubscribe function
+        rtdbUnsubscribe = onValue(userConvsRef, async (indexSnap) => {
+          if (!indexSnap.exists()) {
+            subscriber.next([]);
+            return;
+          }
+
+          const convIds = Object.keys(indexSnap.val());
+          const convs: Conversation[] = [];
+          const key = await this.getCryptoKey();
+
+          for (const convId of convIds) {
+            const metaSnap = await get(child(this.fbService.rootRef, `conversations/${convId}/metadata`));
+            if (metaSnap.exists()) {
+              const data = metaSnap.val() as Omit<Conversation, 'id'>;
+
+              let plainLastMsg = data.lastMessage;
+              if (plainLastMsg && plainLastMsg.length > 0) {
+                try {
+                  plainLastMsg = await this.cryptoService.decryptData(plainLastMsg, key);
+                } catch {
+                  // Leave as-is if decryption fails
+                }
+              }
+
+              convs.push({ ...data, id: convId, lastMessage: plainLastMsg });
             }
           }
 
-          convs.push({
-            ...data,
-            id: convId,
-            lastMessage: plainLastMsg
-          });
-        }
-      }
+          convs.sort((a, b) => b.updatedAt - a.updatedAt);
+          subscriber.next(convs);
+        });
+      });
 
-      // Sort by updatedAt desc
-      convs.sort((a, b) => b.updatedAt - a.updatedAt);
-      subject.next(convs);
+      // Cleanup both listeners on unsubscribe
+      return () => {
+        authUnsub.unsubscribe();
+        if (rtdbUnsubscribe) rtdbUnsubscribe();
+      };
     });
-
-    return subject.asObservable();
   }
 
   /**
@@ -150,7 +165,7 @@ export class ChatService {
       type,
       status: 'sent',
       timestamp: Date.now(),
-      quotedMessageId: quotedId
+      ...(quotedId ? { quotedMessageId: quotedId } : {})
     };
 
     // We do a multi-path update to write the message and update the metadata simultaneously

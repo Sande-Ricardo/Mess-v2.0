@@ -55,6 +55,41 @@ export class AuthService {
   }
 
   /**
+   * Fetches a user's full profile by UID.
+   */
+  public async getUserById(uid: string): Promise<User | null> {
+    const userRef = this.fbService.getUserRef(uid);
+    const snapshot = await get(userRef);
+    return snapshot.exists() ? (snapshot.val() as User) : null;
+  }
+
+  /**
+   * Searches for a user by exact username.
+   * Resolves /usernames/{username} → UID → /users/{uid}.
+   * Returns null if the username doesn't exist or matches the current user.
+   */
+  public async searchUserByUsername(username: string): Promise<User | null> {
+    if (!username.trim()) return null;
+
+    const usernameRef = child(this.fbService.rootRef, `usernames/${username.trim()}`);
+    const usernameSnap = await get(usernameRef);
+
+    if (!usernameSnap.exists()) return null;
+
+    const targetUid = usernameSnap.val() as string;
+
+    // Don't return the current user in search results
+    if (targetUid === this.currentUser()?.uid) return null;
+
+    const userRef = this.fbService.getUserRef(targetUid);
+    const userSnap = await get(userRef);
+
+    if (!userSnap.exists()) return null;
+
+    return userSnap.val() as User;
+  }
+
+  /**
    * Creates RTDB profile metadata after successful auth creation
    */
   private async createRTDBProfile(
