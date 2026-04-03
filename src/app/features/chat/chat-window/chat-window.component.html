@@ -1,5 +1,5 @@
 <div class="chat-wrapper">
-  
+
   <!-- Header -->
   <header class="chat-header glass-panel">
     <div class="contact-info">
@@ -11,7 +11,7 @@
         <span class="status">{{ contactStatus }}</span>
       </div>
     </div>
-    
+
     <div class="security-badge">
       <span class="icon">🔒</span>
       <span class="text">E2E activo</span>
@@ -21,23 +21,23 @@
   <!-- Message List (Virtual Scroll) -->
   <div class="message-area">
     <cdk-virtual-scroll-viewport itemSize="60" class="scroll-viewport" #scrollViewport>
-      
+
       <div *cdkVirtualFor="let msg of messages" class="message-row" [class.me]="msg.senderId === myUid">
         <div class="bubble" [class.deleted]="msg.type === 'deleted'">
-          
+
           <ng-container *ngIf="msg.type !== 'deleted'; else deletedTpl">
-            
+
             <ng-container *ngIf="msg.type === 'voice'; else textMsg">
               <app-voice-message [audioUrl]="msg.content"></app-voice-message>
             </ng-container>
-            
+
             <ng-template #textMsg>
               <span class="content">{{ msg.content }}</span>
             </ng-template>
 
             <span class="time">{{ msg.timestamp | date:'shortTime' }}</span>
           </ng-container>
-          
+
           <ng-template #deletedTpl>
             <span class="content deleted-text">🚫 This message was deleted</span>
           </ng-template>
@@ -52,29 +52,22 @@
       <div class="dots">
         <span></span><span></span><span></span>
       </div>
-      <span class="text">escribiendo...</span>
+      <span class="text">writing...</span>
     </div>
   </div>
 
   <!-- Compose Footer -->
   <footer class="chat-footer glass-panel">
-    
+
     <ng-container *ngIf="!isRecordingVoice; else recordingTpl">
       <button class="icon-btn attachment">
         <!-- Mock Icon -->
         📎
       </button>
-      
+
       <div class="input-wrapper">
-        <textarea 
-          cdkTextareaAutosize
-          #autosize="cdkTextareaAutosize"
-          cdkAutosizeMinRows="1"
-          cdkAutosizeMaxRows="5"
-          class="message-input"
-          placeholder="Escribe un mensaje..."
-          [(ngModel)]="newMessage"
-          (input)="onInput()"
+        <textarea cdkTextareaAutosize #autosize="cdkTextareaAutosize" cdkAutosizeMinRows="1" cdkAutosizeMaxRows="5"
+          class="message-input" placeholder="Escribe un mensaje..." [(ngModel)]="newMessage" (input)="onInput()"
           (keydown)="onKeyDown($event)"></textarea>
       </div>
 
@@ -88,10 +81,7 @@
     </ng-container>
 
     <ng-template #recordingTpl>
-      <app-voice-recorder 
-        class="flex-1"
-        [chatContextId]="convId()" 
-        (dismiss)="isRecordingVoice = false">
+      <app-voice-recorder class="flex-1" [chatContextId]="convId()" (dismiss)="isRecordingVoice = false">
       </app-voice-recorder>
     </ng-template>
 

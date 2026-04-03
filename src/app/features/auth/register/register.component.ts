@@ -1,9 +1,9 @@
-import { Component, inject, signal, effect } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { CryptoService } from '../../../core/services/crypto.service';
-import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 
 @Component({
   selector: 'app-register',
@@ -21,7 +21,7 @@ export class RegisterComponent {
   public step = signal<1 | 2 | 3 | 4>(1); // Step 4 is confirmation
   public isLoading = signal<boolean>(false);
   public errorMessage = signal<string | null>(null);
-  
+
   // Recovery phrase
   public mnemonic = signal<string | null>(null);
 
@@ -80,17 +80,14 @@ export class RegisterComponent {
 
   public async onSubmitStep1() {
     if (this.step1Form.invalid) return;
-    // For MVP Email Flow: Native Firebase sends verification link, no 6-digit OTP easily achievable without cloud funcs.
-    // We will simulate OTP step or skip. Let's do a simulated OTP screen to fulfill the UI requirement,
-    // but the actual account creation will happen in Step 3 after all details are gathered.
+    // Firebase Auth natively uses passwords or email links, not 6-digit email OTPs.
+    // Therefore, we skip the OTP step (Step 2) for the email flow and go straight to profile creation.
     this.errorMessage.set(null);
-    this.startCountdown();
-    this.step.set(2);
+    this.step.set(3);
   }
 
   public onSubmitStep2() {
     if (this.step2Form.invalid) return;
-    // MVP Fake OTP Verification (accepts anything 6 digits to pass to next screen since we use Email/Pwd under hood)
     clearInterval(this.intervalFn);
     this.errorMessage.set(null);
     this.step.set(3);
@@ -98,7 +95,7 @@ export class RegisterComponent {
 
   public async onSubmitStep3() {
     if (this.step3Form.invalid || this.usernameAvailable() === false) return;
-    
+
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
@@ -108,11 +105,11 @@ export class RegisterComponent {
     try {
       // Execute the actual Firebase Registration here
       await this.authService.registerWithEmail(email!, password!, username!, displayName!);
-      
+
       // Generate E2E Recovery Phrase
       const phrase = await this.cryptoService.generateMnemonic();
       this.mnemonic.set(phrase);
-      
+
       this.step.set(4); // Move to final confirmation screen
     } catch (err: any) {
       if (err.message === 'username-taken') {

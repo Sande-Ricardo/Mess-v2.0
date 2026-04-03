@@ -1,19 +1,19 @@
-import { Injectable, inject, signal } from '@angular/core';
-import { 
-  Auth, 
-  authState, 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signOut as fbSignOut,
-  signInWithPhoneNumber,
+import { inject, Injectable, signal } from '@angular/core';
+import {
   ApplicationVerifier,
+  Auth,
+  authState,
   ConfirmationResult,
+  createUserWithEmailAndPassword,
+  signOut as fbSignOut,
   sendEmailVerification,
+  signInWithEmailAndPassword,
+  signInWithPhoneNumber,
   UserCredential
 } from '@angular/fire/auth';
-import { FirebaseService } from './firebase.service';
-import { ref, get, set, child, update } from '@angular/fire/database';
+import { child, get, update } from '@angular/fire/database';
 import { User, UserSettings } from '../models/user.model';
+import { FirebaseService } from './firebase.service';
 
 @Injectable({
   providedIn: 'root'
@@ -34,10 +34,11 @@ export class AuthService {
         const snapshot = await get(userRef);
         if (snapshot.exists()) {
           this.currentUser.set(snapshot.val() as User);
-        } else {
-          // If profile hasn't been written yet (e.g. during middle of registration block)
-          this.currentUser.set(null);
         }
+        // NOTE: If the profile doesn't exist yet, we DON'T clear currentUser.
+        // This handles the race condition where authState fires before createRTDBProfile
+        // finishes writing (e.g. during registration). createRTDBProfile sets the
+        // signal explicitly via this.currentUser.set(newUser) after the write completes.
       } else {
         this.currentUser.set(null);
       }
@@ -57,10 +58,10 @@ export class AuthService {
    * Creates RTDB profile metadata after successful auth creation
    */
   private async createRTDBProfile(
-    uid: string, 
-    username: string, 
-    email: string, 
-    displayName: string, 
+    uid: string,
+    username: string,
+    email: string,
+    displayName: string,
     phoneNumber?: string
   ): Promise<void> {
     const timestamp = Date.now();
@@ -74,11 +75,11 @@ export class AuthService {
       uid,
       username,
       email,
-      phoneNumber: phoneNumber || undefined,
       displayName,
       createdAt: timestamp,
       lastSeen: timestamp,
-      settings
+      settings,
+      ...(phoneNumber ? { phoneNumber } : {})
     };
 
     // Transactionally write to usernames node and users node
@@ -118,9 +119,9 @@ export class AuthService {
    * Step 2 of Phone Auth: Confirms OTP and sets up username / generic data.
    */
   public async verifyOTP(
-    confirmationResult: ConfirmationResult, 
-    code: string, 
-    username: string, 
+    confirmationResult: ConfirmationResult,
+    code: string,
+    username: string,
     displayName: string
   ): Promise<void> {
     const exists = await this.checkUsernameExists(username);
@@ -129,16 +130,16 @@ export class AuthService {
     }
 
     const credentials = await confirmationResult.confirm(code);
-    
+
     // Check if the user is already established, if not, create the profile
     const userRef = this.fbService.getUserRef(credentials.user.uid);
     const snapshot = await get(userRef);
     if (!snapshot.exists()) {
       await this.createRTDBProfile(
-        credentials.user.uid, 
-        username, 
+        credentials.user.uid,
+        username,
         credentials.user.email || '', // In SMS Auth, email is rarely present at start
-        displayName, 
+        displayName,
         credentials.user.phoneNumber || undefined
       );
     }

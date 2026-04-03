@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ChatService } from '../../../core/services/chat.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { Conversation } from '../../../core/models/chat.model';
 
 @Component({
@@ -15,6 +16,7 @@ import { Conversation } from '../../../core/models/chat.model';
 })
 export class ConversationListComponent implements OnInit {
   private readonly chatService = inject(ChatService);
+  public readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
   // States
@@ -77,8 +79,13 @@ export class ConversationListComponent implements OnInit {
 
   // Helper to extract the *other* user ID for UI display (mock contact)
   public getContactId(conv: Conversation): string | null {
-    const myUid = this.chatService['authService'].currentUser()?.uid;
+    const myUid = this.authService.currentUser()?.uid;
     const ids = Object.keys(conv.participants);
     return ids.find(id => id !== myUid) || 'Unknown';
+  }
+
+  public async onSignOut(): Promise<void> {
+    await this.authService.signOut();
+    this.router.navigate(['/auth/login']);
   }
 }

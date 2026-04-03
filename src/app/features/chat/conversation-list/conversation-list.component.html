@@ -50,4 +50,25 @@
     }
   </div>
 
+  <!-- User Footer with Logout -->
+  <div class="sidebar-footer">
+    <div class="user-info">
+      <div class="avatar-self">
+        {{ authService.currentUser()?.displayName?.charAt(0) | uppercase }}
+      </div>
+      <div class="user-details">
+        <span class="display-name">{{ authService.currentUser()?.displayName }}</span>
+        <span class="username">&#64;{{ authService.currentUser()?.username }}</span>
+      </div>
+    </div>
+
+    <button
+      id="logoutBtn"
+      class="logout-btn"
+      title="Sign out"
+      (click)="onSignOut()">
+      <span>⏻</span>
+    </button>
+  </div>
+
 </div>
