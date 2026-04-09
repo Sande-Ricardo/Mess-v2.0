@@ -1,7 +1,7 @@
-import { Injectable, inject, OnDestroy } from '@angular/core';
+  import { Injectable, inject, OnDestroy, effect } from '@angular/core';
 import { FirebaseService } from './firebase.service';
 import { AuthService } from './auth.service';
-import { ref, set, remove, get, child, onValue, off, onDisconnect } from '@angular/fire/database';
+import { ref, set, remove, get, child, onValue, off, onDisconnect, serverTimestamp } from '@angular/fire/database';
 import { Observable, Subject, Subscription, timer } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { User } from '../models/user.model';
@@ -17,11 +17,50 @@ export class PresenceService implements OnDestroy {
   private typingSubjects = new Map<string, Subject<boolean>>();
   private typingSubscriptions = new Map<string, Subscription>();
 
-  constructor() {}
+  private connectedRefUnsub?: () => void;
+
+  constructor() {
+    // Al reaccionar al signal del usuario, activamos o desactivamos su presencia en DB
+    effect(() => {
+      const user = this.authService.currentUser();
+      if (user) {
+        this.initializeOnlinePresence(user.uid, user.settings?.lastSeenVisibility !== 'none');
+      } else if (this.connectedRefUnsub) {
+        this.connectedRefUnsub();
+        this.connectedRefUnsub = undefined;
+      }
+    });
+  }
 
   ngOnDestroy() {
     this.typingSubjects.forEach(subject => subject.complete());
     this.typingSubscriptions.forEach(sub => sub.unsubscribe());
+    if (this.connectedRefUnsub) this.connectedRefUnsub();
+  }
+
+  /**
+   * Se acopla a '.info/connected' para reaccionar a caídas de red o cierres abruptos
+   */
+  private initializeOnlinePresence(uid: string, canSetLastSeen: boolean) {
+    const connectedRef = child(this.fbService.rootRef, '.info/connected');
+    const isOnlineRef = child(this.fbService.rootRef, `users/${uid}/isOnline`);
+    const lastSeenRef = child(this.fbService.rootRef, `users/${uid}/lastSeen`);
+
+    if (this.connectedRefUnsub) {
+      this.connectedRefUnsub();
+    }
+
+    this.connectedRefUnsub = onValue(connectedRef, (snap) => {
+      if (snap.val() === true) {
+        onDisconnect(isOnlineRef).set(false);
+        if (canSetLastSeen) {
+           onDisconnect(lastSeenRef).set(serverTimestamp());
+        }
+        
+        // Establecer como conectado
+        set(isOnlineRef, true);
+      }
+    });
   }
 
   /**
