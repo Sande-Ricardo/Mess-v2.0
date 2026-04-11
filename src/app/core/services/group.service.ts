@@ -2,8 +2,9 @@ import { Injectable, inject } from '@angular/core';
 import { FirebaseService } from './firebase.service';
 import { AuthService } from './auth.service';
 import { ref, set, update, get, child, onValue, off } from '@angular/fire/database';
-import { Observable, Subject } from 'rxjs';
-import { GroupMetadata, GroupMember, GroupMemberRole } from '../models/chat.model';
+import { Observable, Subject, fromEvent, combineLatest } from 'rxjs';
+import { GroupMetadata, GroupMember, GroupMemberRole, Conversation } from '../models/chat.model';
+import { authState, User as FirebaseUser } from '@angular/fire/auth';
 
 @Injectable({
   providedIn: 'root'
@@ -165,7 +166,7 @@ export class GroupService {
     const updates: Record<string, any> = {};
     for (const key in data) {
       if (key !== 'memberCount' && key !== 'createdAt' && key !== 'createdBy') {
-        updates[`groups/${groupId}/metadata/${key}`] = (data as keyof GroupMetadata)[key] as any;
+        updates[`groups/${groupId}/metadata/${key}`] = (data as any)[key];
       }
     }
     
@@ -183,5 +184,73 @@ export class GroupService {
     });
 
     return subject.asObservable();
+  }
+
+  /**
+   * Retrieves all groups the current user is a part of.
+   */
+  public getUserGroups(): Observable<(GroupMetadata & { id: string })[]> {
+    return new Observable<(GroupMetadata & { id: string })[]>(subscriber => {
+      let rtdbUnsubscribe: (() => void) | null = null;
+
+      const authUnsub = authState(this.fbService.auth).subscribe(async (fbUser: FirebaseUser | null) => {
+        if (rtdbUnsubscribe) {
+          rtdbUnsubscribe();
+          rtdbUnsubscribe = null;
+        }
+
+        if (!fbUser) {
+          subscriber.next([]);
+          return;
+        }
+
+        const userGroupsRef = child(this.fbService.rootRef, `users/${fbUser.uid}/groups`);
+
+        rtdbUnsubscribe = onValue(userGroupsRef, async (indexSnap) => {
+          if (!indexSnap.exists()) {
+            subscriber.next([]);
+            return;
+          }
+
+          const groupIds = Object.keys(indexSnap.val());
+          const groups: (GroupMetadata & { id: string })[] = [];
+
+          for (const groupId of groupIds) {
+            const groupPromise = get(child(this.fbService.rootRef, `groups/${groupId}/metadata`)).catch(() => ({ exists: () => false, val: () => null } as any));
+            const chatPromise = get(child(this.fbService.rootRef, `conversations/${groupId}/metadata`)).catch(() => ({ exists: () => false, val: () => null } as any));
+
+            const [metaSnap, chatSnap] = await Promise.all([groupPromise, chatPromise]);
+
+            if (metaSnap.exists()) {
+              const groupData = metaSnap.val();
+              if (chatSnap.exists()) {
+                const chatData = chatSnap.val();
+                
+                // Nota: Por ahora, devolveremos el mensaje crudo. En futuras iteraciones
+                // inyectarlo desencriptado o simplemente un flag de "New messages!"
+                let plainLastMsg = chatData.lastMessage;
+
+                groupData.lastMessage = plainLastMsg;
+                groupData.updatedAt = chatData.updatedAt;
+              }
+              groups.push({ ...groupData, id: groupId });
+            }
+          }
+
+          // Ordinarily sorted by updatedAt. We fallback to createdAt.
+          groups.sort((a, b) => {
+            const aTime = (a as any).updatedAt || a.createdAt;
+            const bTime = (b as any).updatedAt || b.createdAt;
+            return bTime - aTime;
+          });
+          subscriber.next(groups);
+        });
+      });
+
+      return () => {
+        authUnsub.unsubscribe();
+        if (rtdbUnsubscribe) rtdbUnsubscribe();
+      };
+    });
   }
 }

@@ -31,9 +31,12 @@ export class CloudinaryService {
     const fetchPromise = fetch(uploadUrl, {
       method: 'POST',
       body: formData
-    }).then(response => {
+    }).then(async response => {
       if (!response.ok) {
-        throw new Error(`Cloudinary upload failed: ${response.statusText}`);
+        const errData = await response.json().catch(() => null);
+        const serverMsg = errData?.error?.message || response.statusText;
+        console.error('Cloudinary Rejection:', errData);
+        throw new Error(`Cloudinary upload failed: ${serverMsg}`);
       }
       return response.json();
     });

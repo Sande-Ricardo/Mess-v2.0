@@ -181,10 +181,10 @@ export class ChatService {
    * Streams a conversation's messages and decrypts them on the fly.
    */
   public getMessages(convId: string): Observable<Message[]> {
-    const subject = new Subject<Message[]>();
-    const messagesRef = child(this.fbService.rootRef, `conversations/${convId}/messages`);
+    return new Observable<Message[]>(subscriber => {
+      const messagesRef = child(this.fbService.rootRef, `conversations/${convId}/messages`);
 
-    onValue(messagesRef, async (snapshot) => {
+      const rtdbUnsubscribe = onValue(messagesRef, async (snapshot) => {
       if (snapshot.exists()) {
         const rawMessages = snapshot.val() as Record<string, Message>;
         const key = await this.getCryptoKey();
@@ -205,30 +205,30 @@ export class ChatService {
             }
           }
 
-          decryptedMessages.push({
-            ...rawMsg,
-            id: msgId,
-            content: plainContent
-          });
+            decryptedMessages.push({
+              ...rawMsg,
+              id: msgId,
+              content: plainContent
+            });
+          }
+
+          // Sort by timestamp asc
+          decryptedMessages.sort((a, b) => a.timestamp - b.timestamp);
+          subscriber.next(decryptedMessages);
+        } else {
+          subscriber.next([]);
         }
+      });
 
-        // Sort by timestamp asc
-        decryptedMessages.sort((a, b) => a.timestamp - b.timestamp);
-        subject.next(decryptedMessages);
-      } else {
-        subject.next([]);
-      }
+      return () => rtdbUnsubscribe();
     });
-
-    return subject.asObservable();
   }
 
   /**
    * Unsubscribe from message streams (cleanup memory)
    */
   public stopListeningMessages(convId: string): void {
-    const messagesRef = child(this.fbService.rootRef, `conversations/${convId}/messages`);
-    off(messagesRef);
+    // Deprecated: Streams are now self-managing via Observable cleanup natively
   }
 
   /**

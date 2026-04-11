@@ -4,11 +4,11 @@
   <div class="sidebar-header">
     <div class="title-row">
       <h2>Chats</h2>
-      <button class="icon-btn new-chat" title="New conversation">📝</button>
+      <button class="icon-btn new-chat" title="New conversation" (click)="showCreateGroupModal.set(true)">📝</button>
     </div>
 
     <!-- Conversation filter search -->
-    @if (conversations().length > 0) {
+    @if (feedItems().length > 0) {
     <div class="search-box">
       <span class="icon">🔍</span>
       <input id="searchInput" type="text" placeholder="Search (Ctrl + K)" [ngModel]="searchQuery()"
@@ -19,8 +19,8 @@
 
   <!-- ──────── USER SEARCH ──────── -->
   <!-- Shown prominently when no conversations exist, shown as secondary field otherwise -->
-  <div class="user-search-section" [class.empty-mode]="conversations().length === 0">
-    @if (conversations().length === 0) {
+  <div class="user-search-section" [class.empty-mode]="feedItems().length === 0">
+    @if (feedItems().length === 0) {
     <div class="empty-hero">
       <p class="empty-title">Start a conversation</p>
       <p class="empty-sub">Search for a user by their username to start messaging.</p>
@@ -30,7 +30,7 @@
     <div class="user-search-box" [class.focused]="userSearchQuery().length > 0">
       <span class="icon">👤</span>
       <input id="userSearchInput" type="text"
-        [placeholder]="conversations().length === 0 ? 'Find user by @username...' : 'New chat by @username'"
+        [placeholder]="feedItems().length === 0 ? 'Find user by @username...' : 'New chat by @username'"
         [ngModel]="userSearchQuery()" (ngModelChange)="onUserSearchInput($event)" />
       @if (isSearching()) {
       <span class="spinner">⏳</span>
@@ -62,35 +62,35 @@
 
   <!-- ──────── CONVERSATION LIST ──────── -->
   <div class="conversations-wrapper">
-    @if (conversations().length > 0) {
-    @if (filteredConversations().length === 0) {
-    <div class="empty-state">
-      <p>No chats match "{{ searchQuery() }}".</p>
-    </div>
-    } @else {
-    @for (conv of filteredConversations(); track conv.id) {
-    <a [routerLink]="['/chat', conv.id]" routerLinkActive="active" class="conversation-item fade-in">
-      <div class="avatar-mock">
-        {{ getContactInitial(conv) }}
+    @if (feedItems().length > 0) {
+      @if (filteredConversations().length === 0) {
+      <div class="empty-state">
+        <p>No chats match "{{ searchQuery() }}".</p>
       </div>
+      } @else {
+        @for (conv of filteredConversations(); track conv.id) {
+        <a [routerLink]="['/chat', conv.id]" routerLinkActive="active" class="conversation-item fade-in">
+          <div class="avatar-mock" [class.group-avatar]="conv.isGroup">
+            {{ conv.avatarChar }}
+          </div>
 
-      <div class="contentArea">
-        <div class="top-row">
-          <span class="name">{{ getContactName(conv) }}</span>
-          <span class="time">{{ conv.updatedAt | date:'shortTime' }}</span>
-        </div>
+          <div class="contentArea">
+            <div class="top-row">
+              <span class="name">{{ conv.name }}</span>
+              <span class="time">{{ conv.updatedAt | date:'shortTime' }}</span>
+            </div>
 
-        <div class="bottom-row">
-          @if (typeof conv.lastMessage === 'string') {
-          <span class="preview">
-            {{ conv.lastMessage | slice:0:40 }}{{ conv.lastMessage.length > 40 ? '...' : '' }}
-          </span>
-          }
-        </div>
-      </div>
-    </a>
-    }
-    }
+            <div class="bottom-row">
+              @if (conv.lastMessage) {
+              <span class="preview">
+                {{ conv.lastMessage | slice:0:40 }}{{ conv.lastMessage.length > 40 ? '...' : '' }}
+              </span>
+              }
+            </div>
+          </div>
+        </a>
+        }
+      }
     }
   </div>
 
@@ -112,3 +112,8 @@
   </div>
 
 </div>
+
+<!-- Create Group Modal Overlay -->
+@if (showCreateGroupModal()) {
+  <app-create-group (close)="showCreateGroupModal.set(false)"></app-create-group>
+}

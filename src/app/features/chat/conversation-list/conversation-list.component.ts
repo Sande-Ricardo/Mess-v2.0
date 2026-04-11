@@ -1,31 +1,99 @@
 import { CommonModule, DatePipe } from '@angular/common';
 import { Component, HostListener, computed, effect, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subject, combineLatest, debounceTime, distinctUntilChanged, map } from 'rxjs';
 import { Conversation } from '../../../core/models/chat.model';
 import { User } from '../../../core/models/user.model';
 import { AuthService } from '../../../core/services/auth.service';
 import { ChatService } from '../../../core/services/chat.service';
+import { GroupService } from '../../../core/services/group.service';
+import { CreateGroupComponent } from '../create-group/create-group.component';
+
+export interface ContactFeedItem {
+  id: string;
+  isGroup: boolean;
+  name: string;
+  avatarChar: string;
+  lastMessage: string;
+  updatedAt: number;
+}
 
 @Component({
   selector: 'app-conversation-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive, DatePipe],
+  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive, DatePipe, CreateGroupComponent],
   templateUrl: './conversation-list.component.html',
   styleUrl: './conversation-list.component.scss'
 })
 export class ConversationListComponent {
   private readonly chatService = inject(ChatService);
+  private readonly groupService = inject(GroupService);
   public readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
+  public showCreateGroupModal = signal<boolean>(false);
+
   // Conversation list state
   public readonly searchQuery = signal('');
-  public readonly conversations = toSignal(
-    this.chatService.getUserConversations(),
-    { initialValue: [] as Conversation[] }
+
+  // Contact profile cache: uid → User
+  public readonly contactProfiles = signal<Map<string, User>>(new Map());
+
+  public readonly feedItems = toSignal(
+    combineLatest([
+      this.chatService.getUserConversations(),
+      this.groupService.getUserGroups(),
+      toObservable(this.contactProfiles)
+    ]).pipe(
+      map(([chats, groups, profilesMap]) => {
+        const myUid = this.authService.currentUser()?.uid;
+        const items: ContactFeedItem[] = [];
+
+        // 1-to-1 Chats
+        for (const c of chats) {
+          const otherUid = Object.keys(c.participants).find(id => id !== myUid);
+          let name = 'Unknown';
+          let char = '?';
+          if (otherUid) {
+            const profile = this.contactProfiles().get(otherUid);
+            if (profile) {
+              name = profile.displayName || profile.username;
+              char = name.charAt(0).toUpperCase();
+            } else {
+               // Initiate fetching
+               this.fetchProfile(otherUid);
+            }
+          }
+          items.push({
+            id: c.id,
+            isGroup: false,
+            name,
+            avatarChar: char,
+            lastMessage: c.lastMessage || '',
+            updatedAt: c.updatedAt
+          });
+        }
+
+        // Groups
+        for (const g of groups) {
+          items.push({
+            id: g.id,
+            isGroup: true,
+            name: g.name,
+            avatarChar: g.name ? g.name.charAt(0).toUpperCase() : 'G',
+            lastMessage: (g as any).lastMessage || '',
+            updatedAt: (g as any).updatedAt || g.createdAt
+          });
+        }
+
+        // Sort globally
+        items.sort((a, b) => b.updatedAt - a.updatedAt);
+        return items;
+      })
+    ),
+    { initialValue: [] as ContactFeedItem[] }
   );
 
   // User search state
@@ -35,52 +103,21 @@ export class ConversationListComponent {
   public readonly isSearching = signal(false);
   private readonly userSearch$ = new Subject<string>();
 
-  // Contact profile cache: uid → User
-  public readonly contactProfiles = signal<Map<string, User>>(new Map());
-
   // Computed filter logic
   public readonly filteredConversations = computed(() => {
     const term = this.searchQuery().toLowerCase();
-    const list = this.conversations();
+    const list = this.feedItems();
 
     if (!term) return list;
 
     return list.filter(c => {
-      const otherUid = this.getContactId(c);
-      const profile = otherUid ? this.contactProfiles().get(otherUid) : null;
-      const matchName = profile?.username?.toLowerCase().includes(term)
-        || profile?.displayName?.toLowerCase().includes(term);
-      const matchMsg = c.lastMessage?.toLowerCase().includes(term);
+      const matchName = c.name.toLowerCase().includes(term);
+      const matchMsg = c.lastMessage.toLowerCase().includes(term);
       return matchName || matchMsg;
     });
   });
 
   constructor() {
-    // Resolve contact profiles whenever the conversation list updates
-    effect(() => {
-      const convs = this.conversations();
-      const myUid = this.authService.currentUser()?.uid;
-      if (!myUid || convs.length === 0) return;
-
-      const current = new Map(this.contactProfiles());
-      for (const conv of convs) {
-        const otherUid = Object.keys(conv.participants).find(id => id !== myUid);
-        if (otherUid && !current.has(otherUid)) {
-          // Fetch async, then update the map signal
-          this.authService.getUserById(otherUid).then(user => {
-            if (user) {
-              this.contactProfiles.update(map => {
-                const next = new Map(map);
-                next.set(otherUid, user);
-                return next;
-              });
-            }
-          });
-        }
-      }
-    });
-
-    // Wire the debounced user search — must be in constructor for injection context
     this.userSearch$.pipe(
       debounceTime(400),
       distinctUntilChanged()
@@ -98,6 +135,18 @@ export class ConversationListComponent {
       this.searchNotFound.set(!result);
       this.isSearching.set(false);
     });
+  }
+
+  private async fetchProfile(uid: string) {
+    if (this.contactProfiles().has(uid)) return;
+    const user = await this.authService.getUserById(uid);
+    if (user) {
+      this.contactProfiles.update(map => {
+        const next = new Map(map);
+        next.set(uid, user);
+        return next;
+      });
+    }
   }
 
   public onUserSearchInput(term: string) {
@@ -118,7 +167,6 @@ export class ConversationListComponent {
       const currentList = this.filteredConversations();
       if (currentList.length === 0) return;
 
-      // Find currently active from URL route (simplified)
       const currentUrl = this.router.url;
       const match = currentUrl.match(/\/chat\/(.+)/);
       const activeId = match ? match[1] : null;
@@ -126,7 +174,7 @@ export class ConversationListComponent {
       let idx = activeId ? currentList.findIndex(c => c.id === activeId) : -1;
 
       if (event.key === 'ArrowDown') {
-        idx = (idx + 1) % currentList.length; // Loop around
+        idx = (idx + 1) % currentList.length;
       } else {
         idx = (idx - 1 < 0) ? currentList.length - 1 : idx - 1;
       }
@@ -134,30 +182,6 @@ export class ConversationListComponent {
       this.router.navigate(['/chat', currentList[idx].id]);
     }
   }
-
-  /** Returns the other participant's UID in a conversation. */
-  public getContactId(conv: Conversation): string | null {
-    const myUid = this.authService.currentUser()?.uid;
-    const ids = Object.keys(conv.participants);
-    return ids.find(id => id !== myUid) || null;
-  }
-
-  /** Returns the display name (username preferred) for the other participant. */
-  public getContactName(conv: Conversation): string {
-    const uid = this.getContactId(conv);
-    if (!uid) return 'Unknown';
-    const profile = this.contactProfiles().get(uid);
-    return profile?.username ?? profile?.displayName ?? uid.substring(0, 8) + '...';
-  }
-
-  /** Returns the first letter for the avatar. */
-  public getContactInitial(conv: Conversation): string {
-    const uid = this.getContactId(conv);
-    if (!uid) return '?';
-    const profile = this.contactProfiles().get(uid);
-    return (profile?.displayName ?? profile?.username ?? uid).charAt(0).toUpperCase();
-  }
-
 
   public async onSignOut(): Promise<void> {
     await this.authService.signOut();

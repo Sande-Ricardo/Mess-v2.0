@@ -1,10 +1,10 @@
-  import { Injectable, inject, OnDestroy, effect } from '@angular/core';
-import { FirebaseService } from './firebase.service';
-import { AuthService } from './auth.service';
-import { ref, set, remove, get, child, onValue, off, onDisconnect, serverTimestamp } from '@angular/fire/database';
-import { Observable, Subject, Subscription, timer } from 'rxjs';
+import { Injectable, OnDestroy, effect, inject } from '@angular/core';
+import { child, get, off, onDisconnect, onValue, remove, serverTimestamp, set } from '@angular/fire/database';
+import { Observable, Subject, Subscription } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { User } from '../models/user.model';
+import { AuthService } from './auth.service';
+import { FirebaseService } from './firebase.service';
 
 @Injectable({
   providedIn: 'root'
@@ -20,7 +20,6 @@ export class PresenceService implements OnDestroy {
   private connectedRefUnsub?: () => void;
 
   constructor() {
-    // Al reaccionar al signal del usuario, activamos o desactivamos su presencia en DB
     effect(() => {
       const user = this.authService.currentUser();
       if (user) {
@@ -54,13 +53,13 @@ export class PresenceService implements OnDestroy {
       if (snap.val() === true) {
         onDisconnect(isOnlineRef).set(false);
         if (canSetLastSeen) {
-           onDisconnect(lastSeenRef).set(serverTimestamp());
+          onDisconnect(lastSeenRef).set(serverTimestamp());
         }
-        
+
         // Establecer como conectado
         set(isOnlineRef, true);
       }
-    });
+    })
   }
 
   /**
@@ -103,26 +102,26 @@ export class PresenceService implements OnDestroy {
    * Reads the active typing users for a conversation in real-time.
    */
   public getTypingUsers(convId: string): Observable<string[]> {
-    const subject = new Subject<string[]>();
-    const typingListRef = child(this.fbService.rootRef, `typing/${convId}`);
+    return new Observable<string[]>(subscriber => {
+      const typingListRef = child(this.fbService.rootRef, `typing/${convId}`);
 
-    onValue(typingListRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const uids = Object.keys(snapshot.val());
-        // Filter out our own uid
-        const myUid = this.authService.currentUser()?.uid;
-        subject.next(uids.filter(id => id !== myUid));
-      } else {
-        subject.next([]);
-      }
+      const rtdbUnsubscribe = onValue(typingListRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const uids = Object.keys(snapshot.val());
+          // Filter out our own uid
+          const myUid = this.authService.currentUser()?.uid;
+          subscriber.next(uids.filter(id => id !== myUid));
+        } else {
+          subscriber.next([]);
+        }
+      });
+
+      return () => rtdbUnsubscribe();
     });
-
-    return subject.asObservable();
   }
 
   public stopListeningTyping(convId: string): void {
-    const typingListRef = child(this.fbService.rootRef, `typing/${convId}`);
-    off(typingListRef);
+    // Deprecated: Cleaned natively by the stream
   }
 
   /**
@@ -134,7 +133,7 @@ export class PresenceService implements OnDestroy {
 
     // Check privacy settings before pushing
     if (user.settings?.lastSeenVisibility === 'none') {
-      return; 
+      return;
     }
 
     const lastSeenRef = child(this.fbService.rootRef, `users/${user.uid}/lastSeen`);
@@ -149,7 +148,7 @@ export class PresenceService implements OnDestroy {
   public async getLastSeen(uid: string): Promise<number | null> {
     const userRef = child(this.fbService.rootRef, `users/${uid}`);
     const snapshot = await get(userRef);
-    
+
     if (snapshot.exists()) {
       const userData = snapshot.val() as User;
       if (userData.settings?.lastSeenVisibility === 'none') {
@@ -157,7 +156,25 @@ export class PresenceService implements OnDestroy {
       }
       return userData.lastSeen || null;
     }
-    
+
     return null;
+  }
+  /**
+   * Observa el estado online de un usuario específico en tiempo real.
+   */
+  public getOnlineStatus(uid: string): Observable<boolean> {
+    return new Observable<boolean>(subscriber => {
+      const isOnlineRef = child(this.fbService.rootRef, `users/${uid}/isOnline`);
+
+      const rtdbUnsubscribe = onValue(isOnlineRef, (snapshot) => {
+        subscriber.next(snapshot.exists() ? snapshot.val() === true : false);
+      });
+
+      return () => rtdbUnsubscribe();
+    });
+  }
+
+  public stopListeningOnlineStatus(uid: string): void {
+    // Deprecated: Cleaned natively
   }
 }

@@ -12,6 +12,6 @@ export const environment = {
   },
   cloudinary: {
     cloudName: 'dhcycld32',
-    uploadPreset: 'mess_preset'
+    uploadPreset: 'ml_default'
   }
 };

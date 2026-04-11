@@ -8,19 +8,24 @@
           "$convId": {
             ".write": "auth != null"
           }
+        },
+        "groups": {
+          "$groupId": {
+            ".write": "auth != null"
+          }
         }
       }
     },
     "usernames": {
       "$username": {
-        ".read": "auth != null",
+        ".read": true,
         ".write": "auth != null && !data.exists()"
       }
     },
     "conversations": {
       "$convId": {
-        ".read": "auth != null && data.child('metadata/participants/' + auth.uid).val() == true",
-        ".write": "auth != null && (data.child('metadata/participants/' + auth.uid).val() == true || newData.child('metadata/participants/' + auth.uid).val() == true)"
+        ".read": "auth != null && ($convId.beginsWith('grp_') ? root.child('groups').child($convId).child('members').child(auth.uid).exists() : data.child('metadata/participants/' + auth.uid).val() == true)",
+        ".write": "auth != null && ($convId.beginsWith('grp_') ? root.child('groups').child($convId).child('members').child(auth.uid).exists() : (data.child('metadata/participants/' + auth.uid).val() == true || newData.child('metadata/participants/' + auth.uid).val() == true))"
       }
     },
     "groups": {

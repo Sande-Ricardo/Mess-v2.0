@@ -15,12 +15,15 @@ import {
   runInInjectionContext,
   signal
 } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { switchMap, of, filter } from 'rxjs';
 import { Message } from '../../../core/models/chat.model';
 import { User } from '../../../core/models/user.model';
 import { AuthService } from '../../../core/services/auth.service';
 import { ChatService } from '../../../core/services/chat.service';
+import { FirebaseService } from '../../../core/services/firebase.service';
+import { GroupService } from '../../../core/services/group.service';
 import { PresenceService } from '../../../core/services/presence.service';
 import { VoiceMessageComponent } from '../voice-message/voice-message.component';
 import { VoiceRecorderComponent } from '../voice-recorder/voice-recorder.component';
@@ -38,6 +41,8 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
   public readonly convId = input.required<string>();
 
   private readonly chatService = inject(ChatService);
+  private readonly fbService = inject(FirebaseService);
+  private readonly groupService = inject(GroupService);
   private readonly presenceService = inject(PresenceService);
   private readonly authService = inject(AuthService);
   private readonly injector = inject(Injector);
@@ -46,6 +51,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
 
   // ── Own user ──────────────────────────────────────────────────
   public readonly myUid = computed(() => this.authService.currentUser()?.uid);
+  public readonly isGroup = computed(() => this.convId().startsWith('grp_'));
 
   // ── Streams — initialized in ngOnInit after inputs are bound ──
   public messages = signal<Message[]>([]);
@@ -53,10 +59,23 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
 
   // ── Contact resolution ─────────────────────────────────────────
   public readonly contactUser = signal<User | null>(null);
+  public readonly groupNameVal = signal<string | null>(null);
+  public readonly groupMemberCount = signal<number>(0);
+
   public readonly contactName = computed(() =>
-    this.contactUser()?.displayName ?? this.contactUser()?.username ?? 'Loading...'
+    this.isGroup() 
+      ? (this.groupNameVal() ?? 'Loading Group...')
+      : (this.contactUser()?.displayName ?? this.contactUser()?.username ?? 'Loading...')
   );
-  public readonly contactStatus = 'Online';
+
+  public readonly contactIsOnline = signal<boolean>(false);
+  
+  public readonly contactStatus = computed(() => {
+    if (this.isGroup()) {
+      return `${this.groupMemberCount()} members`;
+    }
+    return this.contactIsOnline() ? 'Online' : 'Offline';
+  });
 
   // ── Compose state ──────────────────────────────────────────────
   public newMessage = '';
@@ -86,38 +105,89 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    const convId = this.convId();
+    const convId$ = toObservable(this.convId, { injector: this.injector });
 
     runInInjectionContext(this.injector, () => {
-      const msgSignal = toSignal(this.chatService.getMessages(convId), { initialValue: [] as Message[] });
-      const typingSignal = toSignal(this.presenceService.getTypingUsers(convId), { initialValue: [] as string[] });
-
+      // 1. Mensajes (Reacciona al cambio de ID vaciando el buffer y suscribiéndose de nuevo)
+      const msgSignal = toSignal(
+        convId$.pipe(
+          switchMap(id => this.chatService.getMessages(id))
+        ), 
+        { initialValue: [] as Message[] }
+      );
       effect(() => { this.messages.set(msgSignal()); }, { allowSignalWrites: true });
+
+      // 2. Usuarios escribiendo
+      const typingSignal = toSignal(
+        convId$.pipe(
+          switchMap(id => this.presenceService.getTypingUsers(id))
+        ), 
+        { initialValue: [] as string[] }
+      );
       effect(() => { this.typingUsers.set(typingSignal()); }, { allowSignalWrites: true });
+
+      // 3. Estado Online dinámico del contacto
+      // Creamos un observable a partir del computed que calcula el otherUid
+      const otherUid$ = toObservable(computed(() => this.getOtherUid()), { injector: this.injector });
+      
+      const onlineStatusSignal = toSignal(
+        otherUid$.pipe(
+          switchMap(uid => uid ? this.presenceService.getOnlineStatus(uid) : of(false))
+        ),
+        { initialValue: false }
+      );
+
+      effect(() => {
+        this.contactIsOnline.set(onlineStatusSignal());
+      }, { allowSignalWrites: true });
     });
   }
 
   ngOnDestroy(): void {
-    this.chatService.stopListeningMessages(this.convId());
-    this.presenceService.stopListeningTyping(this.convId());
+    const otherUid = this.getOtherUid();
+    if (otherUid) {
+      this.presenceService.stopListeningOnlineStatus(otherUid);
+    }
   }
 
   // ── Helpers ────────────────────────────────────────────────────
 
   private async resolveContactName(convId: string): Promise<void> {
-    if (!convId) return;
+    if (this.isGroup()) {
+      import('@angular/fire/database').then(async ({ child, get }) => {
+        const metadataRef = child(this.fbService.rootRef, `groups/${convId}/metadata`);
+        const snapshot = await get(metadataRef);
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          this.groupNameVal.set(data.name);
+          this.groupMemberCount.set(data.memberCount || 0);
+        }
+      });
+      return;
+    }
 
-    const myUid = this.authService.currentUser()?.uid;
-    if (!myUid) return;
-
-    // The convId is formatted as "uid1_uid2" (sorted alphabetically)
-    const parts = convId.split('_');
-    const otherUid = parts.find(p => p !== myUid) ?? parts[0];
-
-    if (!otherUid || otherUid === myUid) return;
+    const otherUid = this.getOtherUid();
+    if (!otherUid) return;
 
     const user = await this.authService.getUserById(otherUid);
     this.contactUser.set(user);
+
+    // Listen to online status
+    runInInjectionContext(this.injector, () => {
+      const onlineSignal = toSignal(this.presenceService.getOnlineStatus(otherUid), { initialValue: false });
+      effect(() => {
+        this.contactIsOnline.set(onlineSignal());
+      }, { allowSignalWrites: true });
+    });
+  }
+
+  private getOtherUid(): string | null {
+    const convId = this.convId();
+    const myUid = this.myUid();
+    if (!convId || !myUid) return null;
+
+    const parts = convId.split('_');
+    return parts.find(p => p !== myUid) ?? parts[0];
   }
 
   // ── Actions ────────────────────────────────────────────────────
