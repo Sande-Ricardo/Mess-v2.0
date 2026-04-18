@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { FirebaseService } from './firebase.service';
 import { AuthService } from './auth.service';
+import { CryptoService } from './crypto.service';
 import { ref, set, update, get, child, onValue, off } from '@angular/fire/database';
 import { Observable, Subject, fromEvent, combineLatest } from 'rxjs';
 import { GroupMetadata, GroupMember, GroupMemberRole, Conversation } from '../models/chat.model';
@@ -12,6 +13,18 @@ import { authState, User as FirebaseUser } from '@angular/fire/auth';
 export class GroupService {
   private readonly fbService = inject(FirebaseService);
   private readonly authService = inject(AuthService);
+  private readonly cryptoService = inject(CryptoService);
+
+  // MVP Mock Shared Mnemonic for Live Chat Demo between multiple devices
+  private readonly SHARED_MVP_MNEMONIC = "apple banana cherry date elderberry fig grape hazelnut ice cream jelly kiwi lemon";
+  private sharedCryptoKey: CryptoKey | null = null;
+
+  private async getCryptoKey(): Promise<CryptoKey> {
+    if (!this.sharedCryptoKey) {
+      this.sharedCryptoKey = await this.cryptoService.deriveKeyFromMnemonic(this.SHARED_MVP_MNEMONIC);
+    }
+    return this.sharedCryptoKey!;
+  }
 
   private generateId(): string {
     return 'grp_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
@@ -226,9 +239,17 @@ export class GroupService {
               if (chatSnap.exists()) {
                 const chatData = chatSnap.val();
                 
-                // Nota: Por ahora, devolveremos el mensaje crudo. En futuras iteraciones
-                // inyectarlo desencriptado o simplemente un flag de "New messages!"
+                
+                // Desencriptar el último mensaje si existe
                 let plainLastMsg = chatData.lastMessage;
+                if (plainLastMsg && plainLastMsg.length > 0) {
+                  try {
+                    const key = await this.getCryptoKey();
+                    plainLastMsg = await this.cryptoService.decryptData(plainLastMsg, key);
+                  } catch (err) {
+                    console.error("Decryption failed for group msg", groupId, err);
+                  }
+                }
 
                 groupData.lastMessage = plainLastMsg;
                 groupData.updatedAt = chatData.updatedAt;
