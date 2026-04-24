@@ -1,11 +1,11 @@
-<div class="app-layout">
+<div class="app-layout" [class.chat-active]="outlet.isActivated">
   
   <aside class="sidebar-column">
     <app-conversation-list></app-conversation-list>
   </aside>
 
   <main class="chat-column">
-    <router-outlet></router-outlet>
+    <router-outlet #outlet="outlet"></router-outlet>
   </main>
 
 </div>

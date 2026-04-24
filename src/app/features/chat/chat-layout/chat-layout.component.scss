@@ -27,24 +27,29 @@
 @media screen and (max-width: 768px) {
   .app-layout {
     display: flex; /* Switch from grid to flex for full width toggling */
+    width: 100vw;
+    overflow: hidden;
   }
-
-  /* 
-   * Active Route Handling Hack via CSS:
-   * Normally, Angular Router listens to events to hide/show structural directives.
-   * But a pure CSS approach is to conditionally display none based on a wrapper class 
-   * or by sizing the layout dynamically.
-   */
 
   .sidebar-column {
     flex: 1;
     display: block; // Active by default
+    min-width: 100vw;
   }
 
   .chat-column {
     flex: 1;
     display: none; // Hidden by default on mobile unless a chat is selected
+    min-width: 100vw;
   }
 
-  /* We will refine this active/inactive mobile view logic securely using TS routing classes later if needed. */
+  /* Active chat state */
+  .app-layout.chat-active {
+    .sidebar-column {
+      display: none;
+    }
+    .chat-column {
+      display: block;
+    }
+  }
 }

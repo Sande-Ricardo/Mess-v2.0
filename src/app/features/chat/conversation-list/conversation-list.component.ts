@@ -16,6 +16,7 @@ export interface ContactFeedItem {
   isGroup: boolean;
   name: string;
   avatarChar: string;
+  avatarUrl?: string;
   lastMessage: string;
   updatedAt: number;
 }
@@ -56,11 +57,13 @@ export class ConversationListComponent {
           const otherUid = Object.keys(c.participants).find(id => id !== myUid);
           let name = 'Unknown';
           let char = '?';
+          let avatarUrl: string | undefined;
           if (otherUid) {
             const profile = this.contactProfiles().get(otherUid);
             if (profile) {
               name = profile.displayName || profile.username;
               char = name.charAt(0).toUpperCase();
+              avatarUrl = profile.avatarUrl;
             } else {
                // Initiate fetching
                this.fetchProfile(otherUid);
@@ -71,6 +74,7 @@ export class ConversationListComponent {
             isGroup: false,
             name,
             avatarChar: char,
+            avatarUrl: avatarUrl,
             lastMessage: c.lastMessage || '',
             updatedAt: c.updatedAt
           });
@@ -83,6 +87,7 @@ export class ConversationListComponent {
             isGroup: true,
             name: g.name,
             avatarChar: g.name ? g.name.charAt(0).toUpperCase() : 'G',
+            avatarUrl: g.avatarUrl,
             lastMessage: (g as any).lastMessage || '',
             updatedAt: (g as any).updatedAt || g.createdAt
           });

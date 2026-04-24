@@ -1,4 +1,5 @@
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
+import { Router } from '@angular/router';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import { CommonModule } from '@angular/common';
 import {
@@ -46,6 +47,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
   private readonly presenceService = inject(PresenceService);
   private readonly authService = inject(AuthService);
   private readonly injector = inject(Injector);
+  private readonly router = inject(Router);
 
   @ViewChild('scrollViewport') viewport!: CdkVirtualScrollViewport;
 
@@ -59,6 +61,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
 
   // ── Contact resolution ─────────────────────────────────────────
   public readonly contactUser = signal<User | null>(null);
+  public readonly contactAvatarUrl = signal<string | null>(null);
   public readonly groupNameVal = signal<string | null>(null);
   public readonly groupMemberCount = signal<number>(0);
 
@@ -160,6 +163,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
         if (snapshot.exists()) {
           const data = snapshot.val();
           this.groupNameVal.set(data.name);
+          this.contactAvatarUrl.set(data.avatarUrl || null);
           this.groupMemberCount.set(data.memberCount || 0);
         }
       });
@@ -171,6 +175,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
 
     const user = await this.authService.getUserById(otherUid);
     this.contactUser.set(user);
+    this.contactAvatarUrl.set(user?.avatarUrl || null);
 
     // Listen to online status
     runInInjectionContext(this.injector, () => {
@@ -227,5 +232,9 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
         this.viewport.scrollTo({ bottom: 0, behavior: 'smooth' });
       }
     }, 100);
+  }
+
+  public goBack() {
+    this.router.navigate(['/chat']);
   }
 }
