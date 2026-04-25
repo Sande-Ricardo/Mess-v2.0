@@ -1,25 +1,28 @@
 <div class="voice-message-player">
   <button class="play-btn" (click)="togglePlay()">
     <span *ngIf="!isPlaying">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+      </svg>
     </span>
     <span *ngIf="isPlaying">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="6" y="4" width="4" height="16"></rect>
+        <rect x="14" y="4" width="4" height="16"></rect>
+      </svg>
     </span>
   </button>
 
   <div class="player-body">
-    
+
     <div class="waveform-container" #progressBar (click)="seek($event, progressBar)">
-      
+
       <!-- Base Waveform Array -->
-      <div 
-        class="wave-bar" 
-        *ngFor="let h of staticWaveform; let i = index"
-        [style.height.%]="h * 100"
-        [class.played]="(i / staticWaveform.length * 100) <= progressPercent"
-      ></div>
-      
+      <div class="wave-bar" *ngFor="let h of staticWaveform; let i = index" [style.height.%]="h * 100"
+        [class.played]="(i / staticWaveform.length * 100) <= progressPercent"></div>
+
     </div>
 
     <div class="time-controls">
@@ -30,6 +33,5 @@
         {{ playbackRate }}x
       </button>
     </div>
-
   </div>
 </div>

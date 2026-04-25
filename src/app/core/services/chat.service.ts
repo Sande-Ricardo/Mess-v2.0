@@ -1,12 +1,11 @@
 import { Injectable, inject } from '@angular/core';
-import { FirebaseService } from './firebase.service';
-import { CryptoService } from './crypto.service';
-import { AuthService } from './auth.service';
-import { authState } from '@angular/fire/auth';
-import { ref, set, update, get, child, onValue, off } from '@angular/fire/database';
-import { Observable, Subject } from 'rxjs';
-import { User as FirebaseUser } from '@angular/fire/auth';
+import { User as FirebaseUser, authState } from '@angular/fire/auth';
+import { child, get, onValue, set, update } from '@angular/fire/database';
+import { Observable } from 'rxjs';
 import { Conversation, Message, MessageStatus, MessageType } from '../models/chat.model';
+import { AuthService } from './auth.service';
+import { CryptoService } from './crypto.service';
+import { FirebaseService } from './firebase.service';
 
 @Injectable({
   providedIn: 'root'
@@ -54,7 +53,7 @@ export class ChatService {
 
     const convId = this.generateConversationId(currentUid, targetUid);
     const metadataRef = child(this.fbService.rootRef, `conversations/${convId}/metadata`);
-    
+
     const snapshot = await get(metadataRef);
     if (!snapshot.exists()) {
       // Create chat metadata
@@ -63,13 +62,13 @@ export class ChatService {
         lastMessage: '',
         updatedAt: Date.now()
       };
-      
+
       const updates: Record<string, any> = {};
       updates[`conversations/${convId}/metadata`] = newConv;
       // Write Index to both users
       updates[`users/${currentUid}/conversations/${convId}`] = true;
       updates[`users/${targetUid}/conversations/${convId}`] = true;
-      
+
       await update(this.fbService.rootRef, updates);
     }
 
@@ -120,6 +119,10 @@ export class ChatService {
               if (plainLastMsg && plainLastMsg.length > 0) {
                 try {
                   plainLastMsg = await this.cryptoService.decryptData(plainLastMsg, key);
+                  if (plainLastMsg.includes('res.cloudinary.com')) {
+                    if (plainLastMsg.includes('/video/')) plainLastMsg = 'Voice message';
+                    else plainLastMsg = 'Multimedia';
+                  }
                 } catch {
                   // Leave as-is if decryption fails
                 }
@@ -154,8 +157,8 @@ export class ChatService {
 
     const messagesRef = child(this.fbService.rootRef, `conversations/${convId}/messages`);
     // Mock push ID (In real app, use native push() ref)
-    const msgId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`; 
-    
+    const msgId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
     const msgRef = child(messagesRef, msgId);
 
     const newMessage: Message = {
@@ -171,7 +174,19 @@ export class ChatService {
     // We do a multi-path update to write the message and update the metadata simultaneously
     const updates: Record<string, any> = {};
     updates[`conversations/${convId}/messages/${msgId}`] = newMessage;
-    updates[`conversations/${convId}/metadata/lastMessage`] = encryptedContent; // Keep last msg encrypted in DB too
+
+    let previewText = plainText;
+    if (type === 'voice') {
+      previewText = 'Mensaje de audio';
+    } else if (type === 'image') {
+      previewText = 'Imagen';
+    } else if (type === 'file') {
+      previewText = 'Archivo';
+    }
+
+    const encryptedPreview = await this.cryptoService.encryptData(previewText, key);
+
+    updates[`conversations/${convId}/metadata/lastMessage`] = encryptedPreview; // Keep last msg encrypted in DB too
     updates[`conversations/${convId}/metadata/updatedAt`] = Date.now();
 
     await update(this.fbService.rootRef, updates);
@@ -185,25 +200,25 @@ export class ChatService {
       const messagesRef = child(this.fbService.rootRef, `conversations/${convId}/messages`);
 
       const rtdbUnsubscribe = onValue(messagesRef, async (snapshot) => {
-      if (snapshot.exists()) {
-        const rawMessages = snapshot.val() as Record<string, Message>;
-        const key = await this.getCryptoKey();
-        
-        // Decrypt all contents
-        const decryptedMessages: Message[] = [];
-        for (const msgId in rawMessages) {
-          const rawMsg = rawMessages[msgId];
-          let plainContent = "🔒 [Decoding error]";
-          
-          if (rawMsg.type === 'deleted') {
-            plainContent = "🚫 This message was deleted";
-          } else {
-            try {
-              plainContent = await this.cryptoService.decryptData(rawMsg.content, key);
-            } catch (err) {
-              console.error("Decryption failed for msg", msgId, err);
+        if (snapshot.exists()) {
+          const rawMessages = snapshot.val() as Record<string, Message>;
+          const key = await this.getCryptoKey();
+
+          // Decrypt all contents
+          const decryptedMessages: Message[] = [];
+          for (const msgId in rawMessages) {
+            const rawMsg = rawMessages[msgId];
+            let plainContent = "🔒 [Decoding error]";
+
+            if (rawMsg.type === 'deleted') {
+              plainContent = "🚫 This message was deleted";
+            } else {
+              try {
+                plainContent = await this.cryptoService.decryptData(rawMsg.content, key);
+              } catch (err) {
+                console.error("Decryption failed for msg", msgId, err);
+              }
             }
-          }
 
             decryptedMessages.push({
               ...rawMsg,
@@ -241,7 +256,7 @@ export class ChatService {
     const updates: Record<string, any> = {};
     updates[`conversations/${convId}/messages/${msgId}/content`] = newEncryptedContent;
     // We could optionally flag edited: true here later
-    
+
     await update(this.fbService.rootRef, updates);
   }
 
@@ -252,7 +267,7 @@ export class ChatService {
     const updates: Record<string, any> = {};
     updates[`conversations/${convId}/messages/${msgId}/type`] = 'deleted';
     updates[`conversations/${convId}/messages/${msgId}/content`] = ''; // Erase ciphertext payload
-    
+
     await update(this.fbService.rootRef, updates);
   }
 

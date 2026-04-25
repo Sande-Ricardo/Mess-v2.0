@@ -28,14 +28,31 @@ export class VoiceMessageComponent implements OnInit, OnDestroy {
     this.audio = new Audio(this.audioUrl);
     
     this.audio.addEventListener('loadedmetadata', () => {
-      // Browsers handles duration for complete blobs properly, but streaming formats can be infinity
-      if (this.audio.duration !== Infinity) {
+      // Browsers handle duration for complete blobs properly, but streaming formats (like WebM) can be infinity
+      if (this.audio.duration === Infinity || isNaN(this.audio.duration)) {
+        // Workaround for Chrome WebM duration bug: Jump to a huge number to force duration calculation
+        this.audio.currentTime = 1e10;
+        
+        const getDuration = () => {
+          this.audio.removeEventListener('timeupdate', getDuration);
+          if (this.audio.duration !== Infinity) {
+            this.duration = this.audio.duration;
+          }
+          this.audio.currentTime = 0; // Reset to start
+          this.cdr.detectChanges();
+        };
+        
+        this.audio.addEventListener('timeupdate', getDuration);
+      } else {
         this.duration = this.audio.duration;
+        this.cdr.detectChanges();
       }
-      this.cdr.detectChanges();
     });
     
     this.audio.addEventListener('timeupdate', () => {
+      // Ignore time updates if we are in the middle of fixing the duration workaround
+      if (this.audio.currentTime > 1e9) return;
+      
       this.currentTime = this.audio.currentTime;
       // Guard against infinity if metadata hasn't properly resolved
       if (this.duration && this.duration !== Infinity) {

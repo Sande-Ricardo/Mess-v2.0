@@ -1,11 +1,11 @@
 import { Injectable, inject } from '@angular/core';
-import { FirebaseService } from './firebase.service';
+import { User as FirebaseUser, authState } from '@angular/fire/auth';
+import { child, get, onValue, update } from '@angular/fire/database';
+import { Observable, Subject } from 'rxjs';
+import { GroupMember, GroupMetadata } from '../models/chat.model';
 import { AuthService } from './auth.service';
 import { CryptoService } from './crypto.service';
-import { ref, set, update, get, child, onValue, off } from '@angular/fire/database';
-import { Observable, Subject, fromEvent, combineLatest } from 'rxjs';
-import { GroupMetadata, GroupMember, GroupMemberRole, Conversation } from '../models/chat.model';
-import { authState, User as FirebaseUser } from '@angular/fire/auth';
+import { FirebaseService } from './firebase.service';
 
 @Injectable({
   providedIn: 'root'
@@ -99,7 +99,7 @@ export class GroupService {
   public async removeMember(groupId: string, uid: string): Promise<void> {
     const currentUid = this.authService.currentUser()?.uid;
     if (!currentUid) throw new Error("No authenticated user.");
-    
+
     // Check permissions: Either user leaving themselves, or admin removing someone.
     if (currentUid !== uid) {
       await this.requireAdmin(groupId, currentUid);
@@ -133,11 +133,11 @@ export class GroupService {
     await this.requireAdmin(groupId, currentUid);
 
     const token = this.generateUuid();
-    
+
     const updates: Record<string, any> = {};
     updates[`inviteTokens/${token}`] = groupId;
     updates[`groups/${groupId}/metadata/inviteToken`] = token;
-    
+
     await update(this.fbService.rootRef, updates);
     return token;
   }
@@ -149,7 +149,7 @@ export class GroupService {
     const tokenRef = child(this.fbService.rootRef, `inviteTokens/${token}`);
     const tokenSnap = await get(tokenRef);
     if (!tokenSnap.exists()) throw new Error("Invalid or expired invite token.");
-    
+
     const groupId = tokenSnap.val();
 
     const member: GroupMember = {
@@ -182,7 +182,7 @@ export class GroupService {
         updates[`groups/${groupId}/metadata/${key}`] = (data as any)[key];
       }
     }
-    
+
     if (Object.keys(updates).length > 0) {
       await update(this.fbService.rootRef, updates);
     }
@@ -238,14 +238,18 @@ export class GroupService {
               const groupData = metaSnap.val();
               if (chatSnap.exists()) {
                 const chatData = chatSnap.val();
-                
-                
-                // Desencriptar el último mensaje si existe
+
+
+                // Decrypt the last message if it exists
                 let plainLastMsg = chatData.lastMessage;
                 if (plainLastMsg && plainLastMsg.length > 0) {
                   try {
                     const key = await this.getCryptoKey();
                     plainLastMsg = await this.cryptoService.decryptData(plainLastMsg, key);
+                    if (plainLastMsg.includes('res.cloudinary.com')) {
+                      if (plainLastMsg.includes('/video/')) plainLastMsg = 'Voice message';
+                      else plainLastMsg = 'Multimedia';
+                    }
                   } catch (err) {
                     console.error("Decryption failed for group msg", groupId, err);
                   }
