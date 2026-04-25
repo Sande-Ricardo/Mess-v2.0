@@ -44,13 +44,17 @@
 
           <ng-container *ngIf="msg.type !== 'deleted'; else deletedTpl">
 
-            <ng-container *ngIf="msg.type === 'voice'; else textMsg">
+            <ng-container *ngIf="msg.type === 'voice'">
               <app-voice-message [audioUrl]="msg.content"></app-voice-message>
             </ng-container>
 
-            <ng-template #textMsg>
+            <ng-container *ngIf="msg.type === 'image'">
+              <img [src]="msg.content" class="chat-image-attachment" alt="Image attachment" />
+            </ng-container>
+
+            <ng-container *ngIf="msg.type === 'text'">
               <span class="content">{{ msg.content }}</span>
-            </ng-template>
+            </ng-container>
 
             <span class="time">{{ msg.timestamp | date:'shortTime' }}</span>
           </ng-container>
@@ -82,9 +86,11 @@
 
   <!-- Compose Footer -->
   <footer class="chat-footer glass-panel">
+  
+    <input type="file" #imageInput accept="image/*" (change)="onImageSelected($event)" style="display: none;">
 
     <ng-container *ngIf="!isRecordingVoice; else recordingTpl">
-      <button class="icon-btn attachment">
+      <button class="icon-btn attachment" (click)="triggerImageSelection()">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path
@@ -94,6 +100,14 @@
       </button>
 
       <div class="input-wrapper">
+        <div class="preview-overlay" *ngIf="selectedImagePreview">
+          <div class="preview-content">
+            <img [src]="selectedImagePreview" alt="Selected Image" />
+            <button class="remove-btn" (click)="clearAttachment()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
+        </div>
         <textarea cdkTextareaAutosize #autosize="cdkTextareaAutosize" cdkAutosizeMinRows="1" cdkAutosizeMaxRows="5"
           class="message-input" placeholder="Write a message.." [(ngModel)]="newMessage" (input)="onInput()"
           (keydown)="onKeyDown($event)"></textarea>
@@ -109,12 +123,17 @@
         </svg>
       </button>
 
-      <button class="icon-btn send" *ngIf="newMessage.trim()" (click)="sendMessage()">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="22" y1="2" x2="11" y2="13"></line>
-          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-        </svg>
+      <button class="icon-btn send" *ngIf="newMessage.trim() || selectedImageFile" (click)="sendMessage()">
+        <ng-container *ngIf="!isUploadingAttachment; else loadingSpinner">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </ng-container>
+        <ng-template #loadingSpinner>
+          <div class="spinner"></div>
+        </ng-template>
       </button>
     </ng-container>
 

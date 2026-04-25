@@ -26,6 +26,7 @@ import { ChatService } from '../../../core/services/chat.service';
 import { FirebaseService } from '../../../core/services/firebase.service';
 import { GroupService } from '../../../core/services/group.service';
 import { PresenceService } from '../../../core/services/presence.service';
+import { CloudinaryService } from '../../../core/services/cloudinary.service';
 import { VoiceMessageComponent } from '../voice-message/voice-message.component';
 import { VoiceRecorderComponent } from '../voice-recorder/voice-recorder.component';
 
@@ -48,8 +49,10 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly injector = inject(Injector);
   private readonly router = inject(Router);
+  private readonly cloudinaryService = inject(CloudinaryService);
 
   @ViewChild('scrollViewport') viewport!: CdkVirtualScrollViewport;
+  @ViewChild('imageInput') imageInput!: import('@angular/core').ElementRef<HTMLInputElement>;
 
   // ── Own user ──────────────────────────────────────────────────
   public readonly myUid = computed(() => this.authService.currentUser()?.uid);
@@ -83,6 +86,10 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
   // ── Compose state ──────────────────────────────────────────────
   public newMessage = '';
   public isRecordingVoice = false;
+  
+  public selectedImageFile: File | null = null;
+  public selectedImagePreview: string | null = null;
+  public isUploadingAttachment = false;
 
   constructor() {
     // Auto-scroll effect — runs whenever messages update
@@ -202,20 +209,73 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
     this.presenceService.setTyping(this.convId(), isTyping);
   }
 
+  public triggerImageSelection(): void {
+    if (this.imageInput) {
+      this.imageInput.nativeElement.click();
+    }
+  }
+
+  public onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const file = input.files[0];
+      if (!file.type.startsWith('image/')) return;
+
+      this.selectedImageFile = file;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.selectedImagePreview = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
+    // Clear input value so same file can be selected again if needed
+    input.value = '';
+  }
+
+  public clearAttachment(): void {
+    this.selectedImageFile = null;
+    this.selectedImagePreview = null;
+  }
+
   public async sendMessage(event?: Event): Promise<void> {
     if (event) event.preventDefault();
+    if (this.isUploadingAttachment) return;
 
     const text = this.newMessage.trim();
-    if (!text) return;
+    const hasImage = !!this.selectedImageFile;
 
+    if (!text && !hasImage) return;
+
+    // UI Feedback
     this.newMessage = '';
     await this.presenceService.setTyping(this.convId(), false);
 
     try {
-      await this.chatService.sendMessage(this.convId(), text, 'text');
+      if (hasImage) {
+        this.isUploadingAttachment = true;
+        const fileToUpload = this.selectedImageFile!;
+        
+        // We use a Promise wrapper to cleanly await the observable
+        const secureUrl = await new Promise<string>((resolve, reject) => {
+           this.cloudinaryService.uploadFile(fileToUpload, 'chat-attachments').subscribe({
+             next: (res) => resolve(res.secureUrl),
+             error: (err) => reject(err)
+           });
+        });
+        
+        await this.chatService.sendMessage(this.convId(), secureUrl, 'image');
+        this.clearAttachment();
+        this.isUploadingAttachment = false;
+      }
+
+      if (text) {
+        await this.chatService.sendMessage(this.convId(), text, 'text');
+      }
+
       this.scrollToBottom();
     } catch (e) {
-      console.error('Failed to send message:', e);
+      console.error('Failed to send message/attachment:', e);
+      this.isUploadingAttachment = false;
     }
   }
 
