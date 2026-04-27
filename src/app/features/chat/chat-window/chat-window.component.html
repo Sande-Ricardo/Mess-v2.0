@@ -49,7 +49,7 @@
             </ng-container>
 
             <ng-container *ngIf="msg.type === 'image'">
-              <img [src]="msg.content" class="chat-image-attachment" alt="Image attachment" />
+              <img [src]="msg.content" class="chat-image-attachment" alt="Image attachment" (click)="openImage(msg.content)" style="cursor: pointer;" />
             </ng-container>
 
             <ng-container *ngIf="msg.type === 'text'">
@@ -143,5 +143,13 @@
     </ng-template>
 
   </footer>
+
+  <!-- Image Viewer Overlay -->
+  <app-image-viewer 
+    *ngIf="activeImageIndex() !== null"
+    [images]="chatImages()"
+    [initialIndex]="activeImageIndex()!"
+    (dismiss)="closeImageViewer()">
+  </app-image-viewer>
 
 </div>

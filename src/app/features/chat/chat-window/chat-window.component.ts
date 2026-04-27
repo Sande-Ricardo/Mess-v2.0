@@ -29,11 +29,12 @@ import { PresenceService } from '../../../core/services/presence.service';
 import { CloudinaryService } from '../../../core/services/cloudinary.service';
 import { VoiceMessageComponent } from '../voice-message/voice-message.component';
 import { VoiceRecorderComponent } from '../voice-recorder/voice-recorder.component';
+import { ImageViewerComponent } from '../image-viewer/image-viewer.component';
 
 @Component({
   selector: 'app-chat-window',
   standalone: true,
-  imports: [CommonModule, FormsModule, ScrollingModule, TextFieldModule, VoiceRecorderComponent, VoiceMessageComponent],
+  imports: [CommonModule, FormsModule, ScrollingModule, TextFieldModule, VoiceRecorderComponent, VoiceMessageComponent, ImageViewerComponent],
   templateUrl: './chat-window.component.html',
   styleUrl: './chat-window.component.scss',
   encapsulation: ViewEncapsulation.None
@@ -61,6 +62,10 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
   // ── Streams — initialized in ngOnInit after inputs are bound ──
   public messages = signal<Message[]>([]);
   public typingUsers = signal<string[]>([]);
+  
+  // ── Media Gallery ──
+  public readonly chatImages = computed(() => this.messages().filter(m => m.type === 'image').map(m => m.content));
+  public activeImageIndex = signal<number | null>(null);
 
   // ── Contact resolution ─────────────────────────────────────────
   public readonly contactUser = signal<User | null>(null);
@@ -296,5 +301,18 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
 
   public goBack() {
     this.router.navigate(['/chat']);
+  }
+
+  // ── Media Gallery Methods ──────────────────────────────────────
+
+  public openImage(url: string) {
+    const idx = this.chatImages().indexOf(url);
+    if (idx !== -1) {
+      this.activeImageIndex.set(idx);
+    }
+  }
+
+  public closeImageViewer() {
+    this.activeImageIndex.set(null);
   }
 }
