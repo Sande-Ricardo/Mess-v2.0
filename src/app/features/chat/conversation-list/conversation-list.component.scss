@@ -25,6 +25,7 @@
     }
 
     .new-chat {
+      color: var(--text-secondary);
       background: rgba(138, 43, 226, 0.1);
       border: 1px solid rgba(138, 43, 226, 0.2);
       width: 36px;
@@ -38,6 +39,8 @@
       transition: all 0.2s ease;
 
       &:hover {
+        color: var(--accent-primary);
+        border-color: var(--accent-primary);
         background: rgba(138, 43, 226, 0.2);
         transform: scale(1.05);
       }
@@ -99,6 +102,7 @@
       color: var(--text-primary);
       margin: 0 0 0.3rem 0;
     }
+
     .empty-sub {
       font-size: 0.85rem;
       color: var(--text-secondary);
@@ -123,8 +127,15 @@
       box-shadow: 0 0 0 2px rgba(138, 43, 226, 0.2);
     }
 
-    .icon { font-size: 0.9rem; color: var(--text-secondary); }
-    .spinner { font-size: 0.85rem; animation: spin 1s linear infinite; }
+    .icon {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    .spinner {
+      font-size: 0.85rem;
+      animation: spin 1s linear infinite;
+    }
 
     input {
       flex: 1;
@@ -134,7 +145,9 @@
       font-size: 0.9rem;
       outline: none;
 
-      &::placeholder { color: var(--text-secondary); }
+      &::placeholder {
+        color: var(--text-secondary);
+      }
     }
   }
 
@@ -199,6 +212,7 @@
             color: var(--text-primary);
             font-weight: 600;
           }
+
           .result-username {
             color: var(--text-secondary);
             font-size: 0.8rem;
@@ -223,6 +237,7 @@
   &::-webkit-scrollbar {
     width: 6px;
   }
+
   &::-webkit-scrollbar-thumb {
     background: var(--glass-border);
     border-radius: 4px;
@@ -334,8 +349,15 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ── User Footer ── */
@@ -406,6 +428,10 @@
     justify-content: center;
     cursor: pointer;
     transition: all 0.2s ease;
+
+    span {
+      padding: 1px 0 0 0px;
+    }
 
     &:hover {
       background: rgba(255, 71, 87, 0.18);
