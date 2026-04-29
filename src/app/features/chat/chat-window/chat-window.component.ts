@@ -30,6 +30,7 @@ import { CloudinaryService } from '../../../core/services/cloudinary.service';
 import { VoiceMessageComponent } from '../voice-message/voice-message.component';
 import { VoiceRecorderComponent } from '../voice-recorder/voice-recorder.component';
 import { ImageViewerComponent } from '../image-viewer/image-viewer.component';
+import { WebRTCService, CallType } from '../../../core/services/webrtc.service';
 
 @Component({
   selector: 'app-chat-window',
@@ -51,6 +52,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
   private readonly injector = inject(Injector);
   private readonly router = inject(Router);
   private readonly cloudinaryService = inject(CloudinaryService);
+  private readonly webrtcService = inject(WebRTCService);
 
   @ViewChild('scrollViewport') viewport!: CdkVirtualScrollViewport;
   @ViewChild('imageInput') imageInput!: import('@angular/core').ElementRef<HTMLInputElement>;
@@ -95,6 +97,8 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
   public selectedImageFile: File | null = null;
   public selectedImagePreview: string | null = null;
   public isUploadingAttachment = false;
+
+  public isConnectingCall = false;
 
   constructor() {
     // Auto-scroll effect — runs whenever messages update
@@ -208,6 +212,30 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
   }
 
   // ── Actions ────────────────────────────────────────────────────
+
+  public async startAudioCall() {
+    await this.initiateCall('voice');
+  }
+
+  public async startVideoCall() {
+    await this.initiateCall('video');
+  }
+
+  private async initiateCall(type: CallType) {
+    if (this.isGroup()) return; // Group calls to be implemented in Phase 4/Future
+    const targetUid = this.getOtherUid();
+    if (!targetUid) return;
+
+    this.isConnectingCall = true;
+    try {
+      await this.webrtcService.createCall(targetUid, type);
+      // Wait for the active call view to render
+    } catch (e) {
+      console.error('Failed to initiate call', e);
+    } finally {
+      this.isConnectingCall = false;
+    }
+  }
 
   public onInput(): void {
     const isTyping = this.newMessage.trim().length > 0;

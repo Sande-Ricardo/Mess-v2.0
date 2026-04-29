@@ -102,6 +102,10 @@ export class WebRTCService {
     };
 
     await set(callRef, callPayload);
+    await set(child(this.fbService.rootRef, `users/${targetUid}/incomingCall`), callId);
+
+    // Buffer for ICE candidates arriving before the answer
+    const candidateBuffer: RTCIceCandidateInit[] = [];
 
     // Listen for Answer
     const answerRef = child(this.fbService.rootRef, `calls/${callId}/answer`);
@@ -109,7 +113,11 @@ export class WebRTCService {
       const data = snapshot.val();
       if (!this.pc?.currentRemoteDescription && data) {
         const answerDescription = new RTCSessionDescription(data);
-        this.pc?.setRemoteDescription(answerDescription);
+        this.pc?.setRemoteDescription(answerDescription).then(() => {
+          // Drain the ICE candidate buffer once remote description is set
+          candidateBuffer.forEach(c => this.pc?.addIceCandidate(c));
+          candidateBuffer.length = 0;
+        });
       }
     });
 
@@ -118,7 +126,11 @@ export class WebRTCService {
     onChildAdded(calleeCandidatesRef, (data) => {
       if (data.exists()) {
         const candidate = new RTCIceCandidate(data.val());
-        this.pc?.addIceCandidate(candidate);
+        if (!this.pc?.currentRemoteDescription) {
+          candidateBuffer.push(candidate);
+        } else {
+          this.pc?.addIceCandidate(candidate);
+        }
       }
     });
 
@@ -271,28 +283,38 @@ export class WebRTCService {
     const defaultUid = this.authService.currentUser()?.uid;
     if (!defaultUid) return;
 
-    // We fetch calls where status is ringing. 
-    // In Firebase this requires indexing, but for MVP we observe the calls node locally or just new child added
-    const callsRef = child(this.fbService.rootRef, 'calls');
-    onChildAdded(callsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data && data.callee === defaultUid && data.status === 'ringing') {
-         this.incomingCall.set({
-           callId: snapshot.key as string,
-           caller: data.caller,
-           type: data.type
-         });
+    const incomingCallRef = child(this.fbService.rootRef, `users/${defaultUid}/incomingCall`);
+    
+    onValue(incomingCallRef, async (snapshot) => {
+      const callId = snapshot.val();
+      if (callId) {
+        // Read the actual call details
+        const callSnap = await get(child(this.fbService.rootRef, `calls/${callId}`));
+        if (callSnap.exists()) {
+          const data = callSnap.val();
+          if (data.status === 'ringing') {
+            this.incomingCall.set({
+              callId: callId,
+              caller: data.caller,
+              type: data.type
+            });
+            
+            // Listen specifically to this call's status to clear the UI if missed/declined
+            const statusRef = child(this.fbService.rootRef, `calls/${callId}/status`);
+            onValue(statusRef, (statusSnap) => {
+               if (statusSnap.val() !== 'ringing') {
+                 this.incomingCall.set(null);
+                 off(statusRef);
+                 // Clear the incomingCall pointer in DB
+                 set(incomingCallRef, null);
+               }
+            });
+            return;
+          }
+        }
       }
-    });
-
-    onValue(callsRef, (snapshot) => {
-       const calls = snapshot.val() || {};
-       const currentCall = this.incomingCall();
-       if (currentCall && calls[currentCall.callId]) {
-         if (calls[currentCall.callId].status !== 'ringing') {
-           this.incomingCall.set(null);
-         }
-       }
+      
+      this.incomingCall.set(null);
     });
   }
 }
