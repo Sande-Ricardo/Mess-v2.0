@@ -3,7 +3,7 @@ import { LoginComponent } from './login.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
 import { SessionService } from '../../../core/services/session.service';
-import { Router } from '@angular/router';
+import { Router, RouterLink, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { ElementRef } from '@angular/core';
 
@@ -12,7 +12,7 @@ describe('LoginComponent', () => {
   let fixture: ComponentFixture<LoginComponent>;
   let mockAuthService: jasmine.SpyObj<AuthService>;
   let mockSessionService: jasmine.SpyObj<SessionService>;
-  let mockRouter: jasmine.SpyObj<Router>;
+  let mockRouter: Router;
 
   beforeEach(async () => {
     mockAuthService = jasmine.createSpyObj('AuthService', ['signIn']);
@@ -23,19 +23,22 @@ describe('LoginComponent', () => {
       'stopListeningToPendingSession',
       'simulateMobileScan'
     ]);
-    mockRouter = jasmine.createSpyObj('Router', ['navigate']);
+    // We will inject the real Router from provideRouter and spy on it
+    // mockRouter = jasmine.createSpyObj('Router', ['navigate']);
 
     await TestBed.configureTestingModule({
       imports: [LoginComponent, ReactiveFormsModule],
       providers: [
         { provide: AuthService, useValue: mockAuthService },
         { provide: SessionService, useValue: mockSessionService },
-        { provide: Router, useValue: mockRouter }
+        provideRouter([])
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(LoginComponent);
     component = fixture.componentInstance;
+    mockRouter = TestBed.inject(Router);
+    spyOn(mockRouter, 'navigate');
     fixture.detectChanges();
   });
 

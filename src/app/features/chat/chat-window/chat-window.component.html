@@ -55,7 +55,7 @@
   <div class="message-area">
     <cdk-virtual-scroll-viewport itemSize="60" class="scroll-viewport" #scrollViewport>
 
-      <div *cdkVirtualFor="let msg of messages()" class="message-row" [class.me]="msg.senderId === myUid()">
+      <div *cdkVirtualFor="let msg of messages(); trackBy: trackByMessageId" class="message-row" [class.me]="msg.senderId === myUid()">
         <div class="bubble" [class.deleted]="msg.type === 'deleted'">
 
           <ng-container *ngIf="msg.type !== 'deleted'; else deletedTpl">

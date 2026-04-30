@@ -177,11 +177,11 @@ export class ChatService {
 
     let previewText = plainText;
     if (type === 'voice') {
-      previewText = 'Mensaje de audio';
+      previewText = 'Voice message';
     } else if (type === 'image') {
-      previewText = 'Imagen';
+      previewText = 'Image';
     } else if (type === 'file') {
-      previewText = 'Archivo';
+      previewText = 'File';
     }
 
     const encryptedPreview = await this.cryptoService.encryptData(previewText, key);

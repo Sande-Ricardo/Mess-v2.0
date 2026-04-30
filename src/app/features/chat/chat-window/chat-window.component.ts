@@ -1,5 +1,4 @@
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
-import { Router } from '@angular/router';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import { CommonModule } from '@angular/common';
 import {
@@ -18,19 +17,20 @@ import {
 } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { switchMap, of, filter } from 'rxjs';
+import { Router } from '@angular/router';
+import { of, switchMap } from 'rxjs';
 import { Message } from '../../../core/models/chat.model';
 import { User } from '../../../core/models/user.model';
 import { AuthService } from '../../../core/services/auth.service';
 import { ChatService } from '../../../core/services/chat.service';
+import { CloudinaryService } from '../../../core/services/cloudinary.service';
 import { FirebaseService } from '../../../core/services/firebase.service';
 import { GroupService } from '../../../core/services/group.service';
 import { PresenceService } from '../../../core/services/presence.service';
-import { CloudinaryService } from '../../../core/services/cloudinary.service';
+import { CallType, WebRTCService } from '../../../core/services/webrtc.service';
+import { ImageViewerComponent } from '../image-viewer/image-viewer.component';
 import { VoiceMessageComponent } from '../voice-message/voice-message.component';
 import { VoiceRecorderComponent } from '../voice-recorder/voice-recorder.component';
-import { ImageViewerComponent } from '../image-viewer/image-viewer.component';
-import { WebRTCService, CallType } from '../../../core/services/webrtc.service';
 
 @Component({
   selector: 'app-chat-window',
@@ -64,7 +64,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
   // ── Streams — initialized in ngOnInit after inputs are bound ──
   public messages = signal<Message[]>([]);
   public typingUsers = signal<string[]>([]);
-  
+
   // ── Media Gallery ──
   public readonly chatImages = computed(() => this.messages().filter(m => m.type === 'image').map(m => m.content));
   public activeImageIndex = signal<number | null>(null);
@@ -76,13 +76,13 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
   public readonly groupMemberCount = signal<number>(0);
 
   public readonly contactName = computed(() =>
-    this.isGroup() 
+    this.isGroup()
       ? (this.groupNameVal() ?? 'Loading Group...')
       : (this.contactUser()?.displayName ?? this.contactUser()?.username ?? 'Loading...')
   );
 
   public readonly contactIsOnline = signal<boolean>(false);
-  
+
   public readonly contactStatus = computed(() => {
     if (this.isGroup()) {
       return `${this.groupMemberCount()} members`;
@@ -93,18 +93,28 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
   // ── Compose state ──────────────────────────────────────────────
   public newMessage = '';
   public isRecordingVoice = false;
-  
+
   public selectedImageFile: File | null = null;
   public selectedImagePreview: string | null = null;
   public isUploadingAttachment = false;
 
   public isConnectingCall = false;
 
+  private lastMessageId: string | null = null;
+
   constructor() {
     // Auto-scroll effect — runs whenever messages update
     effect(() => {
       const msgs = this.messages();
-      if (msgs && msgs.length > 0) this.scrollToBottom();
+      if (msgs && msgs.length > 0) {
+        const currentLastId = msgs[msgs.length - 1].id;
+        // Only scroll if a new message has actually been added
+        if (currentLastId !== this.lastMessageId) {
+          const wasNearBottom = this.viewport?.measureScrollOffset('bottom') < 100;
+          this.lastMessageId = currentLastId;
+          this.scrollToBottom(wasNearBottom);
+        }
+      }
     });
 
     // Resolve contact name reactively — retries when currentUser() becomes available
@@ -127,28 +137,28 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
     const convId$ = toObservable(this.convId, { injector: this.injector });
 
     runInInjectionContext(this.injector, () => {
-      // 1. Mensajes (Reacciona al cambio de ID vaciando el buffer y suscribiéndose de nuevo)
+      // 1. Messages (Reacts to ID change by emptying the buffer and subscribing again)
       const msgSignal = toSignal(
         convId$.pipe(
           switchMap(id => this.chatService.getMessages(id))
-        ), 
+        ),
         { initialValue: [] as Message[] }
       );
       effect(() => { this.messages.set(msgSignal()); }, { allowSignalWrites: true });
 
-      // 2. Usuarios escribiendo
+      // 2. Typing users
       const typingSignal = toSignal(
         convId$.pipe(
           switchMap(id => this.presenceService.getTypingUsers(id))
-        ), 
+        ),
         { initialValue: [] as string[] }
       );
       effect(() => { this.typingUsers.set(typingSignal()); }, { allowSignalWrites: true });
 
-      // 3. Estado Online dinámico del contacto
-      // Creamos un observable a partir del computed que calcula el otherUid
+      // 3. Dynamic online status of the contact
+      // We create an observable from the computed that calculates the otherUid
       const otherUid$ = toObservable(computed(() => this.getOtherUid()), { injector: this.injector });
-      
+
       const onlineStatusSignal = toSignal(
         otherUid$.pipe(
           switchMap(uid => uid ? this.presenceService.getOnlineStatus(uid) : of(false))
@@ -287,15 +297,15 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
       if (hasImage) {
         this.isUploadingAttachment = true;
         const fileToUpload = this.selectedImageFile!;
-        
+
         // We use a Promise wrapper to cleanly await the observable
         const secureUrl = await new Promise<string>((resolve, reject) => {
-           this.cloudinaryService.uploadFile(fileToUpload, 'chat-attachments').subscribe({
-             next: (res) => resolve(res.secureUrl),
-             error: (err) => reject(err)
-           });
+          this.cloudinaryService.uploadFile(fileToUpload, 'chat-attachments').subscribe({
+            next: (res) => resolve(res.secureUrl),
+            error: (err) => reject(err)
+          });
         });
-        
+
         await this.chatService.sendMessage(this.convId(), secureUrl, 'image');
         this.clearAttachment();
         this.isUploadingAttachment = false;
@@ -305,7 +315,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
         await this.chatService.sendMessage(this.convId(), text, 'text');
       }
 
-      this.scrollToBottom();
+      // The effect() will handle the scroll automatically when the message arrives from the DB
     } catch (e) {
       console.error('Failed to send message/attachment:', e);
       this.isUploadingAttachment = false;
@@ -319,12 +329,24 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
     }
   }
 
-  private scrollToBottom(): void {
+  private scrollToBottom(force = false): void {
     setTimeout(() => {
-      if (this.viewport) {
-        this.viewport.scrollTo({ bottom: 0, behavior: 'smooth' });
+      if (!this.viewport) return;
+      
+      const distanceToBottom = this.viewport.measureScrollOffset('bottom');
+      const lastMsg = this.messages()[this.messages().length - 1];
+      const isMyMessage = lastMsg?.senderId === this.myUid();
+
+      // We only scroll if:
+      // 1. We just sent the message (always follow own actions)
+      // 2. OR we were already at the bottom (auto-follow new messages)
+      // 3. OR it's a forced scroll
+      if (isMyMessage || force) {
+        if (distanceToBottom > 2) {
+          this.viewport.scrollTo({ bottom: 0, behavior: 'smooth' });
+        }
       }
-    }, 100);
+    }, 150); // Increased slightly to ensure DOM has settled
   }
 
   public goBack() {
@@ -342,5 +364,9 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
 
   public closeImageViewer() {
     this.activeImageIndex.set(null);
+  }
+
+  public trackByMessageId(index: number, msg: Message): string {
+    return msg.id;
   }
 }
