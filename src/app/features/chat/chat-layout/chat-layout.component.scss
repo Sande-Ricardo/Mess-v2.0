@@ -10,23 +10,72 @@
 .sidebar-column {
   height: 100%;
   width: 100%;
-  z-index: 20; /* Keep sidebar above chat context menus if overflow happens */
+  z-index: 20;
+  /* Keep sidebar above chat context menus if overflow happens */
 }
 
 .chat-column {
   height: 100%;
   width: 100%;
   position: relative;
-  
+
   /* Background pattern for the chat area empty state */
   background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
   background-size: 20px 20px;
 }
 
+.empty-layout-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+
+  .watermark-logo {
+    margin-bottom: 2rem;
+
+    app-logo {
+      opacity: 0.05;
+      color: var(--text-primary);
+    }
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+  }
+
+  p {
+    font-size: 0.95rem;
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* Responsive Mobile Rules */
 @media screen and (max-width: 768px) {
   .app-layout {
-    display: flex; /* Switch from grid to flex for full width toggling */
+    display: flex;
+    /* Switch from grid to flex for full width toggling */
     width: 100vw;
     overflow: hidden;
   }
@@ -48,6 +97,7 @@
     .sidebar-column {
       display: none;
     }
+
     .chat-column {
       display: block;
     }

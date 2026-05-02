@@ -6,6 +6,16 @@
 
   <main class="chat-column">
     <router-outlet #outlet="outlet"></router-outlet>
+    
+    @if (!outlet.isActivated) {
+      <div class="empty-layout-state fade-in">
+        <div class="watermark-logo">
+          <app-logo width="200px"></app-logo>
+        </div>
+        <h2>Select a conversation to start messaging</h2>
+        <p>Your messages are protected with end-to-end encryption.</p>
+      </div>
+    }
   </main>
 
 </div>

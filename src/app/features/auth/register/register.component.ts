@@ -5,10 +5,12 @@ import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { CryptoService } from '../../../core/services/crypto.service';
 
+import { AppLogoComponent } from '../../../shared/components/logo/logo.component';
+
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, AppLogoComponent],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss'
 })

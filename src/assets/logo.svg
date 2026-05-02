@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="500"
+   height="500"
+   viewBox="0 0 500 500"
+   version="1.1"
+   id="svg1"
+   xmlns="http://www.w3.org/2000/svg">
+  <g id="layer1" style="display:inline">
+    <g id="path24" transform="matrix(1.6493265,0,0,2.0003006,-207.05718,49.970845)" style="display:inline">
+      <path
+         style="display:inline;fill:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:0;paint-order:stroke fill markers"
+         d="m 155.85585,109.99862 51.99086,30.0007 34.63782,-20.00439 34.64618,20.00646 34.63893,-19.99695 34.64325,19.9989 51.96495,-29.99555 -17.32602,-10.00504 -34.64182,19.99854 -34.64466,-19.99893 -34.63677,20.00198 -34.64252,-20.004603 -34.63942,20.003023 -34.64162,-20.00201 z"
+         id="path23" />
+      <path
+         style="display:inline;fill:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:0;paint-order:stroke fill markers"
+         d="m 155.85709,90.000483 51.99086,-30.000699 34.63782,20.004389 34.64618,-20.006459 34.63893,19.996949 34.64325,-19.998899 51.96495,29.995549 -17.32602,10.00504 -34.64182,-19.99854 -34.64466,19.99893 -34.63677,-20.00198 -34.64252,20.0046 -34.63942,-20.00302 -34.64162,20.00201 z"
+         id="path23-5" />
+      <path
+         style="fill:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:0;paint-order:stroke fill markers"
+         d="m 207.84762,139.99714 34.64002,20.01192 34.64351,-20.00778 34.64176,20.00232 34.63707,-20.00262 17.31888,10.0022 -52.10044,29.88001 -34.49975,-19.86818 -34.64032,19.97252 -51.96228,-29.98575 z"
+         id="path26-4"
+         transform="matrix(1,0,0,-1,0.00124245,199.9991)" />
+      <path
+         style="fill:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:0;paint-order:stroke fill markers"
+         d="m 207.84762,139.99714 34.64002,20.01192 34.64351,-20.00778 34.64176,20.00232 34.63707,-20.00262 17.31888,10.0022 -52.10044,29.88001 -34.49975,-19.86818 -34.64032,19.97252 -51.96228,-29.98575 z"
+         id="path26" />
+    </g>
+  </g>
+</svg>

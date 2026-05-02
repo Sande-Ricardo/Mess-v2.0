@@ -22,6 +22,17 @@
   text-align: center;
   margin-bottom: 2rem;
 
+  .logo-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+  }
+
+  app-logo {
+    color: var(--text-primary);
+    filter: drop-shadow(0 0 8px rgba(138, 43, 226, 0.4));
+  }
+
   h2 {
     color: var(--text-primary);
     margin-bottom: 0.5rem;

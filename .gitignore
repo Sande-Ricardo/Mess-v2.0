@@ -45,3 +45,7 @@ Thumbs.db
 .agent/
 .agents/
 references/
+
+.gemini/
+.vscode/
+.claude/

@@ -11,6 +11,17 @@
   padding: 1.5rem 1rem 1rem 1rem;
   border-bottom: 1px solid var(--glass-border);
 
+  .logo-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    padding-left: 0.25rem;
+  }
+
+  app-logo {
+    filter: drop-shadow(0 0 8px rgba(138, 43, 226, 0.3));
+  }
+
   .title-row {
     display: flex;
     justify-content: space-between;

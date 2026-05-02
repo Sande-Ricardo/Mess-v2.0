@@ -10,6 +10,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ChatService } from '../../../core/services/chat.service';
 import { GroupService } from '../../../core/services/group.service';
 import { CreateGroupComponent } from '../create-group/create-group.component';
+import { AppLogoComponent } from '../../../shared/components/logo/logo.component';
 
 export interface ContactFeedItem {
   id: string;
@@ -24,7 +25,7 @@ export interface ContactFeedItem {
 @Component({
   selector: 'app-conversation-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive, DatePipe, CreateGroupComponent],
+  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive, DatePipe, CreateGroupComponent, AppLogoComponent],
   templateUrl: './conversation-list.component.html',
   styleUrl: './conversation-list.component.scss'
 })

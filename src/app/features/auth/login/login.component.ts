@@ -6,10 +6,12 @@ import { SessionService, PendingSession } from '../../../core/services/session.s
 import { Subscription } from 'rxjs';
 import * as QRCode from 'qrcode';
 
+import { AppLogoComponent } from '../../../shared/components/logo/logo.component';
+
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, AppLogoComponent],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })

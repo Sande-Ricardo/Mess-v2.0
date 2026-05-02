@@ -5,11 +5,12 @@ import { WebRTCService } from '../../../core/services/webrtc.service';
 import { ActiveCallComponent } from '../active-call/active-call.component';
 import { ConversationListComponent } from '../conversation-list/conversation-list.component';
 import { IncomingCallModalComponent } from '../incoming-call-modal/incoming-call-modal.component';
+import { AppLogoComponent } from '../../../shared/components/logo/logo.component';
 
 @Component({
   selector: 'app-chat-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, ConversationListComponent, IncomingCallModalComponent, ActiveCallComponent],
+  imports: [CommonModule, RouterOutlet, ConversationListComponent, IncomingCallModalComponent, ActiveCallComponent, AppLogoComponent],
   templateUrl: './chat-layout.component.html',
   styleUrl: './chat-layout.component.scss'
 })
