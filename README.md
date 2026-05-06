@@ -59,6 +59,64 @@ src/app/
         └── voice-message/        # Custom audio player UI
 ```
 
+## Application Architecture & Data Flow
+
+The following diagram illustrates the integral functioning of the Mess application, detailing how the frontend services interact with the external backend infrastructure (Firebase, Cloudinary, and WebRTC STUN servers). 
+
+It highlights the secure, end-to-end encrypted messaging loop and the peer-to-peer media streaming architecture:
+
+```mermaid
+graph TD
+    %% Define styles
+    classDef client fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
+    classDef firebase fill:#ffe082,stroke:#ff8f00,stroke-width:2px;
+    classDef crypto fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
+    classDef webrtc fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;
+    classDef external fill:#fce4ec,stroke:#c2185b,stroke-width:2px;
+
+    %% Client App
+    subgraph Client Application ["Angular 19 Frontend"]
+        UI["User Interface (Components)"]:::client
+        Auth["Auth & Session Service"]:::client
+        Chat["Chat Service"]:::client
+        Crypt["Crypto Service (E2EE)"]:::crypto
+        WebRTC["WebRTC Service"]:::webrtc
+        Media["Media Services"]:::client
+    end
+
+    %% External Services
+    subgraph Backend Infrastructure
+        FBAuth[("Firebase Auth")]:::firebase
+        RTDB[("Firebase RTDB")]:::firebase
+        Cloudinary["Cloudinary Storage"]:::external
+        STUN["STUN/TURN Servers"]:::external
+    end
+
+    %% Interactions
+    UI -->|"1. Authenticate"| Auth
+    Auth <-->|"Tokens & UID"| FBAuth
+    
+    UI -->|"2. Send Msg"| Chat
+    Chat -->|"Encrypt"| Crypt
+    Crypt -->|"Ciphertext"| Chat
+    Chat -->|"Write"| RTDB
+    
+    RTDB -->|"Sync"| Chat
+    Chat -->|"Decrypt"| Crypt
+    Crypt -->|"Plaintext"| Chat
+    Chat -->|"Update"| UI
+    
+    UI -->|"3. Attach Media"| Media
+    Media -->|"Upload"| Cloudinary
+    Cloudinary -->|"Secure URL"| Media
+    Media -->|"Send as Msg"| Chat
+    
+    UI -->|"4. Start Call"| WebRTC
+    WebRTC <-->|"Signaling (Offer/Answer/ICE)"| RTDB
+    WebRTC <-->|"Network Path"| STUN
+    WebRTC <.->|"Direct P2P Media Stream"| WebRTC
+```
+
 ## Setup & Installation
 
 ### Prerequisites
