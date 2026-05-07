@@ -125,7 +125,7 @@ sequenceDiagram
     P2->>P2: Accept & Capture Stream
     P2->>DB: Send WebRTC Answer & ICE
     DB-->>P1: Connection Established
-    P1<-->>P2: Direct P2P Audio/Video Stream
+    Note over P1,P2: Established Direct P2P Media Stream
 ```
 
 ## Setup & Installation
