@@ -61,60 +61,71 @@ src/app/
 
 ## Application Architecture & Data Flow
 
-The following diagram illustrates the integral functioning of the Mess application, detailing how the frontend services interact with the external backend infrastructure (Firebase, Cloudinary, and WebRTC STUN servers). 
+The architecture is divided into specialized modules to ensure high performance and security. The following diagrams detail the system's structural components and its core communication flows.
 
-It highlights the secure, end-to-end encrypted messaging loop and the peer-to-peer media streaming architecture:
+### 1. High-Level System Architecture
+This diagram shows the relationship between the Angular frontend layers and the external infrastructure.
 
 ```mermaid
-graph TD
-    %% Define styles
-    classDef client fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
-    classDef firebase fill:#ffe082,stroke:#ff8f00,stroke-width:2px;
-    classDef crypto fill:#e8f5e9,stroke:#388e3c,stroke-width:2px;
-    classDef webrtc fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;
-    classDef external fill:#fce4ec,stroke:#c2185b,stroke-width:2px;
-
-    %% Client App
-    subgraph Client Application ["Angular 19 Frontend"]
-        UI["User Interface (Components)"]:::client
-        Auth["Auth & Session Service"]:::client
-        Chat["Chat Service"]:::client
-        Crypt["Crypto Service (E2EE)"]:::crypto
-        WebRTC["WebRTC Service"]:::webrtc
-        Media["Media Services"]:::client
+graph LR
+    subgraph Frontend ["Client Application (Angular 19)"]
+        UI["UI Layer"]
+        Services["Core Logic & Services"]
+        Crypto["Crypto Engine (E2EE)"]
     end
 
-    %% External Services
-    subgraph Backend Infrastructure
-        FBAuth[("Firebase Auth")]:::firebase
-        RTDB[("Firebase RTDB")]:::firebase
-        Cloudinary["Cloudinary Storage"]:::external
-        STUN["STUN/TURN Servers"]:::external
+    subgraph Backend ["External Infrastructure"]
+        FB_Auth[("Firebase Auth")]
+        FB_DB[("Firebase RTDB")]
+        Cloudinary["Cloudinary (Media)"]
+        STUN["WebRTC STUN/TURN"]
     end
 
-    %% Interactions
-    UI -->|"1. Authenticate"| Auth
-    Auth <-->|"Tokens & UID"| FBAuth
-    
-    UI -->|"2. Send Msg"| Chat
-    Chat -->|"Encrypt"| Crypt
-    Crypt -->|"Ciphertext"| Chat
-    Chat -->|"Write"| RTDB
-    
-    RTDB -->|"Sync"| Chat
-    Chat -->|"Decrypt"| Crypt
-    Crypt -->|"Plaintext"| Chat
-    Chat -->|"Update"| UI
-    
-    UI -->|"3. Attach Media"| Media
-    Media -->|"Upload"| Cloudinary
-    Cloudinary -->|"Secure URL"| Media
-    Media -->|"Send as Msg"| Chat
-    
-    UI -->|"4. Start Call"| WebRTC
-    WebRTC <-->|"Signaling (Offer/Answer/ICE)"| RTDB
-    WebRTC <-->|"Network Path"| STUN
-    WebRTC <.->|"Direct P2P Media Stream"| WebRTC
+    UI --- Services
+    Services --- Crypto
+    Services --- FB_Auth
+    Services --- FB_DB
+    Services --- Cloudinary
+    Services --- STUN
+```
+
+### 2. E2E Encrypted Messaging Flow
+Messaging follows a strictly secure path where content is encrypted before leaving the client and decrypted only upon arrival.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant A as Sender (UI)
+    participant AC as Crypto Service
+    participant DB as Firebase RTDB
+    participant BC as Crypto Service
+    participant B as Receiver (UI)
+
+    A->>AC: Input plaintext message
+    AC->>AC: Encrypt (Web Crypto API)
+    AC->>DB: Write Ciphertext & metadata
+    DB-->>BC: Sync new message node
+    BC->>BC: Decrypt with shared key
+    BC->>B: Render plaintext content
+```
+
+### 3. WebRTC P2P Call Negotiation
+The calling system uses Firebase only as a signaling intermediary, establishing a direct connection between peers for media streaming.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant P1 as Caller
+    participant DB as Firebase RTDB (Signaling)
+    participant P2 as Callee
+
+    P1->>P1: Capture Media Stream
+    P1->>DB: Send WebRTC Offer & ICE
+    DB-->>P2: Notify Incoming Call (Offer)
+    P2->>P2: Accept & Capture Stream
+    P2->>DB: Send WebRTC Answer & ICE
+    DB-->>P1: Connection Established
+    P1<-->>P2: Direct P2P Audio/Video Stream
 ```
 
 ## Setup & Installation
