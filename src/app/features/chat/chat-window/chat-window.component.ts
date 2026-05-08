@@ -99,6 +99,9 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
   public isUploadingAttachment = false;
 
   public isConnectingCall = false;
+  
+  // ── Edit state ──
+  public editingMessageId = signal<string | null>(null);
 
   private lastMessageId: string | null = null;
 
@@ -138,12 +141,15 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
 
     runInInjectionContext(this.injector, () => {
       // 1. Messages (Reacts to ID change by emptying the buffer and subscribing again)
+      // We directly assign the signal to public property for cleaner reactivity
       const msgSignal = toSignal(
         convId$.pipe(
           switchMap(id => this.chatService.getMessages(id))
         ),
         { initialValue: [] as Message[] }
       );
+      
+      // Sync with our component property
       effect(() => { this.messages.set(msgSignal()); }, { allowSignalWrites: true });
 
       // 2. Typing users
@@ -280,6 +286,30 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
     this.selectedImagePreview = null;
   }
 
+  public startEditing(msg: Message): void {
+    if (msg.type !== 'text') return;
+    this.editingMessageId.set(msg.id);
+    this.newMessage = msg.content;
+    // The textarea auto-resize will handle the expansion via template binding
+  }
+
+  public cancelEditing(): void {
+    this.editingMessageId.set(null);
+    this.newMessage = '';
+  }
+
+  public async deleteMessage(msgId: string, forEveryone: boolean): Promise<void> {
+    try {
+      if (forEveryone) {
+        await this.chatService.deleteMessageForAll(this.convId(), msgId);
+      } else {
+        await this.chatService.deleteMessageForMe(this.convId(), msgId);
+      }
+    } catch (e) {
+      console.error('Failed to delete message:', e);
+    }
+  }
+
   public async sendMessage(event?: Event): Promise<void> {
     if (event) event.preventDefault();
     if (this.isUploadingAttachment) return;
@@ -312,7 +342,13 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
       }
 
       if (text) {
-        await this.chatService.sendMessage(this.convId(), text, 'text');
+        const editId = this.editingMessageId();
+        if (editId) {
+          await this.chatService.editMessage(this.convId(), editId, text);
+          this.cancelEditing();
+        } else {
+          await this.chatService.sendMessage(this.convId(), text, 'text');
+        }
       }
 
       // The effect() will handle the scroll automatically when the message arrives from the DB
@@ -330,23 +366,25 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
   }
 
   private scrollToBottom(force = false): void {
+    // We use a small delay to allow the virtual scroll to account for the new item's height
     setTimeout(() => {
       if (!this.viewport) return;
       
-      const distanceToBottom = this.viewport.measureScrollOffset('bottom');
-      const lastMsg = this.messages()[this.messages().length - 1];
+      // Re-calculate viewport internal state if height changed (e.g. keyboard or banner)
+      this.viewport.checkViewportSize();
+
+      const msgs = this.messages();
+      if (msgs.length === 0) return;
+
+      const lastMsg = msgs[msgs.length - 1];
       const isMyMessage = lastMsg?.senderId === this.myUid();
 
-      // We only scroll if:
-      // 1. We just sent the message (always follow own actions)
-      // 2. OR we were already at the bottom (auto-follow new messages)
-      // 3. OR it's a forced scroll
+      // Scroll to the very last index. 
+      // Using index is often more stable in virtual scrolling than pixel offsets.
       if (isMyMessage || force) {
-        if (distanceToBottom > 2) {
-          this.viewport.scrollTo({ bottom: 0, behavior: 'smooth' });
-        }
+        this.viewport.scrollToIndex(msgs.length - 1, 'smooth');
       }
-    }, 150); // Increased slightly to ensure DOM has settled
+    }, 50); // Lowered delay for faster reaction before native jump
   }
 
   public goBack() {

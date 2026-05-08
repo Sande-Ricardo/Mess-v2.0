@@ -53,7 +53,7 @@
 
   <!-- Message List (Virtual Scroll) -->
   <div class="message-area">
-    <cdk-virtual-scroll-viewport itemSize="60" class="scroll-viewport" #scrollViewport>
+    <cdk-virtual-scroll-viewport itemSize="80" class="scroll-viewport" #scrollViewport>
 
       <div *cdkVirtualFor="let msg of messages(); trackBy: trackByMessageId" class="message-row" [class.me]="msg.senderId === myUid()">
         <div class="bubble" [class.deleted]="msg.type === 'deleted'">
@@ -72,8 +72,29 @@
               <span class="content">{{ msg.content }}</span>
             </ng-container>
 
-            <span class="time">{{ msg.timestamp | date:'shortTime' }}</span>
+            <div class="meta-info">
+              <span class="edited-mark" *ngIf="msg.isEdited">(edited)</span>
+              <span class="time">{{ msg.timestamp | date:'shortTime' }}</span>
+            </div>
           </ng-container>
+
+          <!-- Message Actions Menu -->
+          <div class="message-actions" *ngIf="msg.type !== 'deleted'">
+            <button class="action-trigger">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+            </button>
+            <div class="actions-dropdown">
+              <button *ngIf="msg.senderId === myUid() && msg.type === 'text'" (click)="startEditing(msg)">
+                Edit
+              </button>
+              <button (click)="deleteMessage(msg.id, false)">
+                Delete for me
+              </button>
+              <button class="danger" *ngIf="msg.senderId === myUid()" (click)="deleteMessage(msg.id, true)">
+                Delete for everyone
+              </button>
+            </div>
+          </div>
 
           <ng-template #deletedTpl>
             <span class="content deleted-text">
@@ -116,6 +137,14 @@
       </button>
 
       <div class="input-wrapper">
+        <!-- Editing Banner -->
+        <div class="editing-banner fade-in" *ngIf="editingMessageId()">
+          <span class="text">Editing message</span>
+          <button class="cancel-edit" (click)="cancelEditing()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+
         <div class="preview-overlay" *ngIf="selectedImagePreview">
           <div class="preview-content">
             <img [src]="selectedImagePreview" alt="Selected Image" />
@@ -141,10 +170,14 @@
 
       <button class="icon-btn send" *ngIf="newMessage.trim() || selectedImageFile" (click)="sendMessage()">
         <ng-container *ngIf="!isUploadingAttachment; else loadingSpinner">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+          <svg *ngIf="!editingMessageId()" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="22" y1="2" x2="11" y2="13"></line>
             <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+          <!-- Save icon for editing -->
+          <svg *ngIf="editingMessageId()" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         </ng-container>
         <ng-template #loadingSpinner>

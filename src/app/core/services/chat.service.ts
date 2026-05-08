@@ -197,45 +197,70 @@ export class ChatService {
    */
   public getMessages(convId: string): Observable<Message[]> {
     return new Observable<Message[]>(subscriber => {
-      const messagesRef = child(this.fbService.rootRef, `conversations/${convId}/messages`);
+      let rtdbUnsubscribe: (() => void) | null = null;
 
-      const rtdbUnsubscribe = onValue(messagesRef, async (snapshot) => {
-        if (snapshot.exists()) {
-          const rawMessages = snapshot.val() as Record<string, Message>;
-          const key = await this.getCryptoKey();
+      // Wait for Firebase auth to resolve before setting up the RTDB listener
+      // This ensures the filtering logic has access to myUid even on cold page reloads
+      const authUnsub = authState(this.fbService.auth).subscribe(async (fbUser: FirebaseUser | null) => {
+        if (rtdbUnsubscribe) {
+          rtdbUnsubscribe();
+          rtdbUnsubscribe = null;
+        }
 
-          // Decrypt all contents
-          const decryptedMessages: Message[] = [];
-          for (const msgId in rawMessages) {
-            const rawMsg = rawMessages[msgId];
-            let plainContent = "🔒 [Decoding error]";
+        if (!fbUser) {
+          subscriber.next([]);
+          return;
+        }
 
-            if (rawMsg.type === 'deleted') {
-              plainContent = "🚫 This message was deleted";
-            } else {
-              try {
-                plainContent = await this.cryptoService.decryptData(rawMsg.content, key);
-              } catch (err) {
-                console.error("Decryption failed for msg", msgId, err);
+        const myUid = fbUser.uid;
+        const messagesRef = child(this.fbService.rootRef, `conversations/${convId}/messages`);
+
+        rtdbUnsubscribe = onValue(messagesRef, async (snapshot) => {
+          if (snapshot.exists()) {
+            const rawMessages = snapshot.val() as Record<string, Message>;
+            const key = await this.getCryptoKey();
+
+            // Filter out messages deleted "for me" by the current user
+            const filteredMessages: Message[] = [];
+
+            for (const msgId in rawMessages) {
+              const rawMsg = rawMessages[msgId];
+              
+              // Skip if user has deleted this message for themselves
+              if (rawMsg.deletedBy?.[myUid]) continue;
+
+              let plainContent = "🔒 [Decoding error]";
+
+              if (rawMsg.type === 'deleted') {
+                plainContent = "🚫 This message was deleted";
+              } else {
+                try {
+                  plainContent = await this.cryptoService.decryptData(rawMsg.content, key);
+                } catch (err) {
+                  console.error("Decryption failed for msg", msgId, err);
+                }
               }
+
+              filteredMessages.push({
+                ...rawMsg,
+                id: msgId,
+                content: plainContent
+              });
             }
 
-            decryptedMessages.push({
-              ...rawMsg,
-              id: msgId,
-              content: plainContent
-            });
+            // Sort by timestamp asc
+            filteredMessages.sort((a, b) => a.timestamp - b.timestamp);
+            subscriber.next(filteredMessages);
+          } else {
+            subscriber.next([]);
           }
-
-          // Sort by timestamp asc
-          decryptedMessages.sort((a, b) => a.timestamp - b.timestamp);
-          subscriber.next(decryptedMessages);
-        } else {
-          subscriber.next([]);
-        }
+        });
       });
 
-      return () => rtdbUnsubscribe();
+      return () => {
+        authUnsub.unsubscribe();
+        if (rtdbUnsubscribe) rtdbUnsubscribe();
+      };
     });
   }
 
@@ -255,7 +280,7 @@ export class ChatService {
 
     const updates: Record<string, any> = {};
     updates[`conversations/${convId}/messages/${msgId}/content`] = newEncryptedContent;
-    // We could optionally flag edited: true here later
+    updates[`conversations/${convId}/messages/${msgId}/isEdited`] = true;
 
     await update(this.fbService.rootRef, updates);
   }
@@ -267,6 +292,20 @@ export class ChatService {
     const updates: Record<string, any> = {};
     updates[`conversations/${convId}/messages/${msgId}/type`] = 'deleted';
     updates[`conversations/${convId}/messages/${msgId}/content`] = ''; // Erase ciphertext payload
+    updates[`conversations/${convId}/messages/${msgId}/isEdited`] = null; // Remove edited flag if present
+
+    await update(this.fbService.rootRef, updates);
+  }
+
+  /**
+   * "Deletes" a message only for the current user.
+   */
+  public async deleteMessageForMe(convId: string, msgId: string): Promise<void> {
+    const currentUid = this.authService.currentUser()?.uid;
+    if (!currentUid) throw new Error("No authenticated user.");
+
+    const updates: Record<string, any> = {};
+    updates[`conversations/${convId}/messages/${msgId}/deletedBy/${currentUid}`] = true;
 
     await update(this.fbService.rootRef, updates);
   }

@@ -18,6 +18,7 @@ export interface Message {
   quotedMessageId?: string; // Optional reply to
   reactions?: Record<string, string>; // { [uid]: emoji }
   isEdited?: boolean; // Flag for edited messages
+  deletedBy?: Record<string, boolean>; // { [uid]: true } - for "Delete for me"
 }
 
 export interface GroupMetadata {
