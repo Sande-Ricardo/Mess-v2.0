@@ -11,6 +11,7 @@ import { ChatService } from '../../../core/services/chat.service';
 import { GroupService } from '../../../core/services/group.service';
 import { CreateGroupComponent } from '../create-group/create-group.component';
 import { AppLogoComponent } from '../../../shared/components/logo/logo.component';
+import { LayoutStateService } from '../../../core/services/layout-state.service';
 
 export interface ContactFeedItem {
   id: string;
@@ -33,6 +34,7 @@ export class ConversationListComponent {
   private readonly chatService = inject(ChatService);
   private readonly groupService = inject(GroupService);
   public readonly authService = inject(AuthService);
+  public readonly layoutState = inject(LayoutStateService);
   private readonly router = inject(Router);
 
   public showCreateGroupModal = signal<boolean>(false);

@@ -2,10 +2,29 @@
   
   <aside class="sidebar-column">
     <app-conversation-list></app-conversation-list>
+    
+    <!-- Main Menu Overlay -->
+    @if (layoutState.isMainMenuOpen()) {
+      <div class="menu-overlay">
+        <app-main-menu></app-main-menu>
+      </div>
+    }
   </aside>
 
   <main class="chat-column">
     <router-outlet #outlet="outlet"></router-outlet>
+    
+    <!-- Active View Overlay (e.g. Profile) -->
+    @if (layoutState.activeMenuView() === 'profile') {
+      <div class="view-overlay">
+        <app-user-profile></app-user-profile>
+      </div>
+    }
+
+    <!-- Backdrop when menu is open -->
+    @if (layoutState.isMainMenuOpen() && !layoutState.activeMenuView()) {
+      <div class="chat-backdrop" (click)="layoutState.closeMenu()"></div>
+    }
     
     @if (!outlet.isActivated) {
       <div class="empty-layout-state fade-in">

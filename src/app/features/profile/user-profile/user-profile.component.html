@@ -1,0 +1,57 @@
+<div class="profile-container fade-in">
+  <div class="profile-header">
+    <button class="icon-btn close-btn" (click)="layoutState.clearView()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+    </button>
+    <h2>Profile</h2>
+  </div>
+  
+  @if (user()) {
+  <div class="profile-content scrollable">
+    
+    <!-- Avatar Section -->
+    <div class="avatar-section">
+      <div class="avatar-wrapper">
+        @if (user()!.avatarUrl) {
+          <img [src]="user()!.avatarUrl" alt="Avatar" class="avatar-img" />
+        } @else {
+          <div class="avatar-placeholder">
+            {{ user()!.displayName.charAt(0) | uppercase }}
+          </div>
+        }
+      </div>
+      <h3 class="display-name">{{ user()!.displayName }}</h3>
+      <span class="username">&#64;{{ user()!.username }}</span>
+    </div>
+
+    <!-- Info Sections -->
+    <div class="info-group">
+      <div class="info-item">
+        <span class="label">Display Name</span>
+        <span class="value">{{ user()!.displayName }}</span>
+      </div>
+      
+      <div class="info-item">
+        <span class="label">Bio</span>
+        <span class="value">{{ user()!.bio || 'Available' }}</span>
+      </div>
+
+      <div class="info-item">
+        <span class="label">Email</span>
+        <span class="value">{{ user()!.email }}</span>
+      </div>
+
+      @if (user()!.phoneNumber) {
+      <div class="info-item">
+        <span class="label">Phone</span>
+        <span class="value">{{ user()!.phoneNumber }}</span>
+      </div>
+      }
+    </div>
+
+  </div>
+  }
+</div>

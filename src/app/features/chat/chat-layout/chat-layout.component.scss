@@ -10,6 +10,7 @@
 .sidebar-column {
   height: 100%;
   width: 100%;
+  position: relative;
   z-index: 20;
   /* Keep sidebar above chat context menus if overflow happens */
 }
@@ -102,4 +103,37 @@
       display: block;
     }
   }
+}
+
+/* Overlays */
+.menu-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 30;
+}
+
+.chat-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+  z-index: 25;
+  animation: fadeIn 0.3s ease-out forwards;
+  cursor: pointer;
+}
+
+.view-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 30;
+  background: var(--bg-dark);
 }

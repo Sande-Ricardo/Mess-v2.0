@@ -14,8 +14,36 @@
   .logo-row {
     display: flex;
     align-items: center;
+    gap: 0.5rem;
     margin-bottom: 1.25rem;
     padding-left: 0.25rem;
+
+    .menu-toggle {
+      color: var(--text-secondary);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--glass-border);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-right: 0.25rem;
+
+      &:hover {
+        color: var(--text-primary);
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.2);
+        transform: scale(1.05);
+      }
+
+      svg {
+        width: 20px;
+        height: 20px;
+      }
+    }
   }
 
   app-logo {
