@@ -1,0 +1,48 @@
+<div class="auth-container">
+  <div class="auth-card glass-panel fade-in">
+    <div class="auth-header">
+      <div class="logo-wrapper">
+        <app-logo width="80px"></app-logo>
+      </div>
+      <h2>Almost there!</h2>
+      <p>Choose a unique username to complete your profile.</p>
+    </div>
+
+    @if (error()) {
+      <div class="error-banner">
+        {{ error() }}
+      </div>
+    }
+
+    <form (ngSubmit)="onFinish()" class="auth-form">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <div class="username-input-wrapper">
+          <span class="prefix">&#64;</span>
+          <input 
+            id="username"
+            type="text"
+            [(ngModel)]="username"
+            name="username"
+            placeholder="your-username"
+            required
+            minlength="3"
+            maxlength="20"
+            pattern="[a-zA-Z0-9_-]+"
+            [disabled]="isLoading()"
+            autocomplete="off"
+          />
+        </div>
+        <small class="hint">Use letters, numbers, underscores or hyphens.</small>
+      </div>
+
+      <button type="submit" class="btn-primary" [disabled]="!username() || isLoading()">
+        @if (isLoading()) {
+          <span>Setting up...</span>
+        } @else {
+          <span>Finish Setup</span>
+        }
+      </button>
+    </form>
+  </div>
+</div>

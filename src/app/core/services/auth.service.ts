@@ -9,6 +9,8 @@ import {
   sendEmailVerification,
   signInWithEmailAndPassword,
   signInWithPhoneNumber,
+  signInWithPopup,
+  GoogleAuthProvider,
   UserCredential
 } from '@angular/fire/auth';
 import { child, get, update } from '@angular/fire/database';
@@ -190,12 +192,37 @@ export class AuthService {
   /**
    * Ends session and clears everything
    */
-  /**
-   * Ends session and clears everything
-   */
   public async signOut(): Promise<void> {
     await fbSignOut(this.auth);
     this.currentUser.set(null);
+  }
+
+  /**
+   * Initiates Google Sign-In and checks if the user is new to the Mess platform.
+   */
+  public async signInWithGoogle(): Promise<{ user: UserCredential; isNewUser: boolean }> {
+    const provider = new GoogleAuthProvider();
+    const credentials = await signInWithPopup(this.auth, provider);
+    
+    // Check if profile exists in RTDB
+    const userRef = this.fbService.getUserRef(credentials.user.uid);
+    const snapshot = await get(userRef);
+    
+    return {
+      user: credentials,
+      isNewUser: !snapshot.exists()
+    };
+  }
+
+  /**
+   * Finalizes registration for Google users by creating their RTDB profile with a chosen username.
+   */
+  public async finalizeGoogleRegistration(uid: string, username: string, email: string, displayName: string): Promise<void> {
+    const exists = await this.checkUsernameExists(username);
+    if (exists) {
+      throw new Error('username-taken');
+    }
+    await this.createRTDBProfile(uid, username, email, displayName);
   }
 
   /**

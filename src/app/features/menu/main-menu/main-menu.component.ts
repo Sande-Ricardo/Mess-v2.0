@@ -1,6 +1,8 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LayoutStateService } from '../../../core/services/layout-state.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-main-menu',
@@ -10,9 +12,17 @@ import { LayoutStateService } from '../../../core/services/layout-state.service'
   styleUrl: './main-menu.component.scss'
 })
 export class MainMenuComponent {
-  layoutState = inject(LayoutStateService);
+  public readonly layoutState = inject(LayoutStateService);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
 
-  openProfile() {
+  public openProfile() {
     this.layoutState.openProfile();
+  }
+
+  public async logout() {
+    await this.authService.signOut();
+    this.layoutState.closeMenu();
+    this.router.navigate(['/auth/login']);
   }
 }

@@ -8,7 +8,8 @@ export const environment = {
     messagingSenderId: "586716712222",
     appId: "1:586716712222:web:267ab90184bf9fea96cd0f",
     measurementId: "G-CZS1DQ59QF",
-    databaseURL: "https://mess-v2-cc8e6-default-rtdb.firebaseio.com"
+    databaseURL: "https://mess-v2-cc8e6-default-rtdb.firebaseio.com",
+    recaptchaSiteKey: "6Ld3nuosAAAAAHcQp5CSv7tvzCOiCWcFtj4rwDZN" // reCAPTCHA v3 site key
   },
   cloudinary: {
     cloudName: 'dhcycld32',

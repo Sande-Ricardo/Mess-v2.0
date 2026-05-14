@@ -25,6 +25,12 @@
 .auth-footer {
   @extend .auth-footer;
 }
+.divider {
+  @extend .divider;
+}
+.btn-google {
+  @extend .btn-google;
+}
 
 // Fade in animations for smooth step transitions
 .fade-in {

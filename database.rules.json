@@ -3,15 +3,15 @@
     "users": {
       "$uid": {
         ".read": "auth != null",
-        ".write": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.token.firebase.app_check_claims.app_id != null && auth.uid == $uid",
         "conversations": {
           "$convId": {
-            ".write": "auth != null"
+            ".write": "auth != null && auth.token.firebase.app_check_claims.app_id != null"
           }
         },
         "groups": {
           "$groupId": {
-            ".write": "auth != null"
+            ".write": "auth != null && auth.token.firebase.app_check_claims.app_id != null"
           }
         }
       }
@@ -19,20 +19,20 @@
     "usernames": {
       "$username": {
         ".read": true,
-        ".write": "auth != null && !data.exists()"
+        ".write": "auth != null && auth.token.firebase.app_check_claims.app_id != null && !data.exists()"
       }
     },
     "conversations": {
       "$convId": {
         ".read": "auth != null && ($convId.beginsWith('grp_') ? root.child('groups').child($convId).child('members').child(auth.uid).exists() : data.child('metadata/participants/' + auth.uid).val() == true)",
-        ".write": "auth != null && ($convId.beginsWith('grp_') ? root.child('groups').child($convId).child('members').child(auth.uid).exists() : (data.child('metadata/participants/' + auth.uid).val() == true || newData.child('metadata/participants/' + auth.uid).val() == true))"
+        ".write": "auth != null && auth.token.firebase.app_check_claims.app_id != null && ($convId.beginsWith('grp_') ? root.child('groups').child($convId).child('members').child(auth.uid).exists() : (data.child('metadata/participants/' + auth.uid).val() == true || newData.child('metadata/participants/' + auth.uid).val() == true))"
       }
     },
     "groups": {
       "$groupId": {
         "metadata": {
           ".read": "auth != null && root.child('groups').child($groupId).child('members').child(auth.uid).exists()",
-          ".write": "auth != null && (!data.exists() || root.child('groups').child($groupId).child('members').child(auth.uid).child('role').val() == 'admin')",
+          ".write": "auth != null && auth.token.firebase.app_check_claims.app_id != null && (!data.exists() || root.child('groups').child($groupId).child('members').child(auth.uid).child('role').val() == 'admin')",
           "memberCount": {
             ".validate": "newData.isNumber() && newData.val() <= 256"
           }
@@ -40,13 +40,13 @@
         "members": {
           "$uid": {
             ".read": "auth != null && root.child('groups').child($groupId).child('members').child(auth.uid).exists()",
-            ".write": "auth != null && (root.child('groups').child($groupId).child('members').child(auth.uid).child('role').val() == 'admin' || (auth.uid == $uid && !newData.exists()) || !root.child('groups').child($groupId).child('metadata').exists())"
+            ".write": "auth != null && auth.token.firebase.app_check_claims.app_id != null && (root.child('groups').child($groupId).child('members').child(auth.uid).child('role').val() == 'admin' || (auth.uid == $uid && !newData.exists()) || !root.child('groups').child($groupId).child('metadata').exists())"
           }
         },
         "messages": {
           ".read": "auth != null && root.child('groups').child($groupId).child('members').child(auth.uid).exists()",
           "$msgId": {
-            ".write": "auth != null && root.child('groups').child($groupId).child('members').child(auth.uid).exists()"
+            ".write": "auth != null && auth.token.firebase.app_check_claims.app_id != null && root.child('groups').child($groupId).child('members').child(auth.uid).exists()"
           }
         }
       }
@@ -54,26 +54,26 @@
     "calls": {
       "$callId": {
         ".read": "auth != null && (data.child('caller').val() == auth.uid || data.child('callee').val() == auth.uid)",
-        ".write": "auth != null && (!data.exists() || data.child('caller').val() == auth.uid || data.child('callee').val() == auth.uid || newData.child('caller').val() == auth.uid || newData.child('callee').val() == auth.uid)"
+        ".write": "auth != null && auth.token.firebase.app_check_claims.app_id != null && (!data.exists() || data.child('caller').val() == auth.uid || data.child('callee').val() == auth.uid || newData.child('caller').val() == auth.uid || newData.child('callee').val() == auth.uid)"
       }
     },
     "group-calls": {
       "$groupId": {
         ".read": "auth != null && root.child('groups').child($groupId).child('members').child(auth.uid).exists()",
-        ".write": "auth != null && root.child('groups').child($groupId).child('members').child(auth.uid).exists()"
+        ".write": "auth != null && auth.token.firebase.app_check_claims.app_id != null && root.child('groups').child($groupId).child('members').child(auth.uid).exists()"
       }
     },
     "inviteTokens": {
       "$token": {
         ".read": "auth != null",
-        ".write": "auth != null"
+        ".write": "auth != null && auth.token.firebase.app_check_claims.app_id != null"
       }
     },
     "typing": {
       "$convId": {
-        ".read": "auth != null",
+        ".read": "auth != null && (root.child('conversations').child($convId).child('metadata/participants/' + auth.uid).val() == true || root.child('groups').child($convId).child('members').child(auth.uid).exists())",
         "$uid": {
-          ".write": "auth != null && auth.uid == $uid"
+          ".write": "auth != null && auth.token.firebase.app_check_claims.app_id != null && auth.uid == $uid"
         }
       }
     },

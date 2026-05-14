@@ -23,6 +23,25 @@ export class RegisterComponent {
   public step = signal<1 | 2 | 3 | 4>(1); // Step 4 is confirmation
   public isLoading = signal<boolean>(false);
   public errorMessage = signal<string | null>(null);
+  public isGoogleLoading = signal<boolean>(false);
+
+  public async onGoogleLogin() {
+    this.isGoogleLoading.set(true);
+    this.errorMessage.set(null);
+
+    try {
+      const { isNewUser } = await this.authService.signInWithGoogle();
+      if (isNewUser) {
+        this.router.navigate(['/auth/setup-username']);
+      } else {
+        this.router.navigate(['/']);
+      }
+    } catch (err: any) {
+      this.errorMessage.set(err.message || 'Google Sign Up failed.');
+    } finally {
+      this.isGoogleLoading.set(false);
+    }
+  }
 
   // Recovery phrase
   public mnemonic = signal<string | null>(null);

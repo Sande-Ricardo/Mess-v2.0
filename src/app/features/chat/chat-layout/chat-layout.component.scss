@@ -103,6 +103,19 @@
       display: block;
     }
   }
+
+  /* Profile active state on mobile */
+  .app-layout.profile-active {
+    .chat-column {
+      display: block !important;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 100;
+    }
+  }
 }
 
 /* Overlays */
