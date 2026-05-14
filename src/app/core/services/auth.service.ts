@@ -190,8 +190,25 @@ export class AuthService {
   /**
    * Ends session and clears everything
    */
+  /**
+   * Ends session and clears everything
+   */
   public async signOut(): Promise<void> {
     await fbSignOut(this.auth);
     this.currentUser.set(null);
+  }
+
+  /**
+   * Updates the current user's profile information in RTDB.
+   */
+  public async updateUserProfile(updates: Partial<User>): Promise<void> {
+    const user = this.currentUser();
+    if (!user) throw new Error('no-user-logged-in');
+
+    const userRef = this.fbService.getUserRef(user.uid);
+    await update(userRef, updates);
+
+    // Update local signal explicitly
+    this.currentUser.set({ ...user, ...updates });
   }
 }
