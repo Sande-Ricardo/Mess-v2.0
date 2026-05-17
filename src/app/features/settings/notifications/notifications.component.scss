@@ -1,0 +1,206 @@
+.notifications-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 2rem;
+  animation: fadeIn 0.4s ease-out forwards;
+
+  .settings-header {
+    margin-bottom: 1rem;
+    
+    h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text-color, #ffffff);
+      margin: 0 0 0.5rem 0;
+    }
+
+    p {
+      color: rgba(255, 255, 255, 0.7);
+      margin: 0;
+      font-size: 0.95rem;
+    }
+  }
+
+  .setting-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 1.5rem;
+    backdrop-filter: blur(12px);
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.06);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-info {
+      flex: 1;
+      padding-right: 2rem;
+
+      h3 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-color, #ffffff);
+      }
+
+      p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.6);
+        line-height: 1.4;
+      }
+    }
+
+    .card-action {
+      flex-shrink: 0;
+
+      .glass-btn {
+        padding: 0.6rem 1.2rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+        color: white;
+
+        &.primary {
+          background: rgba(99, 102, 241, 0.2); // Indigo tint
+          border-color: rgba(99, 102, 241, 0.4);
+          
+          &:hover:not([disabled]) {
+            background: rgba(99, 102, 241, 0.4);
+          }
+        }
+
+        &[disabled] {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
+
+      .glass-select {
+        appearance: none;
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 0.6rem 2rem 0.6rem 1rem;
+        color: white;
+        font-size: 0.9rem;
+        cursor: pointer;
+        outline: none;
+        transition: all 0.3s ease;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='rgba(255,255,255,0.7)'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.7rem center;
+        background-size: 1.2em;
+
+        &:focus {
+          border-color: rgba(99, 102, 241, 0.5);
+          background-color: rgba(0, 0, 0, 0.3);
+        }
+
+        option {
+          background: #1a1a1a;
+          color: white;
+        }
+      }
+    }
+  }
+
+  .settings-hint {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: rgba(99, 102, 241, 0.1);
+    border-left: 4px solid #6366f1;
+    border-radius: 4px 8px 8px 4px;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.85);
+
+    strong {
+      color: white;
+    }
+  }
+}
+
+// Custom Toggle Switch
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 26px;
+
+  input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+
+    &:checked + .slider {
+      background-color: #6366f1;
+    }
+
+    &:checked + .slider:before {
+      transform: translateX(24px);
+    }
+  }
+
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(255, 255, 255, 0.1);
+    transition: .4s;
+    border-radius: 34px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+
+    &:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 4px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 600px) {
+  .notifications-settings {
+    padding: 1rem;
+    
+    .setting-card {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+
+      .card-info {
+        padding-right: 0;
+      }
+      
+      .card-action {
+        width: 100%;
+        
+        .glass-select, .glass-btn {
+          width: 100%;
+        }
+      }
+    }
+  }
+}

@@ -6,6 +6,7 @@ import { WebRTCService } from '../../../core/services/webrtc.service';
 import { AppLogoComponent } from '../../../shared/components/logo/logo.component';
 import { MainMenuComponent } from '../../menu/main-menu/main-menu.component';
 import { UserProfileComponent } from '../../profile/user-profile/user-profile.component';
+import { NotificationsComponent } from '../../settings/notifications/notifications.component';
 import { ActiveCallComponent } from '../active-call/active-call.component';
 import { ConversationListComponent } from '../conversation-list/conversation-list.component';
 import { IncomingCallModalComponent } from '../incoming-call-modal/incoming-call-modal.component';
@@ -13,7 +14,7 @@ import { IncomingCallModalComponent } from '../incoming-call-modal/incoming-call
 @Component({
   selector: 'app-chat-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, ConversationListComponent, IncomingCallModalComponent, ActiveCallComponent, AppLogoComponent, MainMenuComponent, UserProfileComponent],
+  imports: [CommonModule, RouterOutlet, ConversationListComponent, IncomingCallModalComponent, ActiveCallComponent, AppLogoComponent, MainMenuComponent, UserProfileComponent, NotificationsComponent],
   templateUrl: './chat-layout.component.html',
   styleUrl: './chat-layout.component.scss'
 })

@@ -20,6 +20,10 @@ export class MainMenuComponent {
     this.layoutState.openProfile();
   }
 
+  public openNotifications() {
+    this.layoutState.openNotifications();
+  }
+
   public async logout() {
     await this.authService.signOut();
     this.layoutState.closeMenu();

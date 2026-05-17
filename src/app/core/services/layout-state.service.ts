@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 
-export type MenuView = 'profile' | 'settings' | null;
+export type MenuView = 'profile' | 'settings' | 'notifications' | null;
 
 @Injectable({
   providedIn: 'root'
@@ -32,6 +32,10 @@ export class LayoutStateService {
 
   openSettings() {
     this.activeMenuView.set('settings');
+  }
+
+  openNotifications() {
+    this.activeMenuView.set('notifications');
   }
 
   clearView() {

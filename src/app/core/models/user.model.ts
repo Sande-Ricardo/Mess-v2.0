@@ -4,6 +4,14 @@ export interface UserSettings {
   avatarVisibility: 'all' | 'contacts' | 'none';
 }
 
+export type NotificationLevel = 'urgent' | 'normal' | 'silent';
+
+export interface NotificationSettings {
+  defaultLevel: NotificationLevel;
+  dailySummary: boolean;
+  conversations?: Record<string, NotificationLevel>;
+}
+
 export interface User {
   uid: string;
   username: string;
@@ -15,6 +23,7 @@ export interface User {
   createdAt: number;
   lastSeen: number;
   settings: UserSettings;
+  notificationSettings?: NotificationSettings;
 }
 
 export interface UserSession {

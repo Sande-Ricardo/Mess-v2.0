@@ -13,6 +13,10 @@
           "$groupId": {
             ".write": "auth != null && auth.token.firebase.app_check_claims.app_id != null"
           }
+        },
+        "notificationSettings": {
+          ".read": "auth != null && auth.uid == $uid",
+          ".write": "auth != null && auth.uid == $uid"
         }
       }
     },
