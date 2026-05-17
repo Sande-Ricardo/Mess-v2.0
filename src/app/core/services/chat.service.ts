@@ -54,8 +54,9 @@ export class ChatService {
     const convId = this.generateConversationId(currentUid, targetUid);
     const metadataRef = child(this.fbService.rootRef, `conversations/${convId}/metadata`);
 
-    const snapshot = await get(metadataRef);
-    if (!snapshot.exists()) {
+    const snapshot = await get(metadataRef).catch(() => null);
+    
+    if (!snapshot || !snapshot.exists()) {
       // Create chat metadata
       const newConv: Omit<Conversation, 'id'> = {
         participants: { [currentUid]: true, [targetUid]: true },
