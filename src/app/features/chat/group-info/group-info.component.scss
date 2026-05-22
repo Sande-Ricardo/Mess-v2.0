@@ -116,6 +116,18 @@
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
+  
+  &.avatar-sm-placeholder {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary, #00d2ff));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 1.1rem;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+    user-select: none;
+  }
 }
 
 .name-row {

@@ -144,6 +144,25 @@
   &:focus { outline: none; background: rgba(255,255,255,0.15); }
 }
 
+.search-indicator {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #aaa);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 15px;
+  padding-left: 10px;
+
+  .spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-top-color: var(--primary-color, #6b4cff);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+}
+
 .users-list {
   max-height: 200px;
   overflow-y: auto;
@@ -177,6 +196,18 @@
       border-radius: 50%;
       margin-right: 12px;
       object-fit: cover;
+      
+      &.sm-avatar-placeholder {
+        background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary, #00d2ff));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 1.1rem;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+        user-select: none;
+      }
     }
     
     .user-info {

@@ -55,17 +55,28 @@
         type="text" 
         class="search-input"
         [ngModel]="searchQuery()"
-        (ngModelChange)="searchQuery.set($event)"
-        placeholder="Search users..." 
+        (ngModelChange)="onSearchInput($event)"
+        placeholder="Search by username or existing contacts..." 
       />
+
+      <div class="search-indicator" *ngIf="isSearching()">
+        <span class="spinner"></span> Searching...
+      </div>
 
       <div class="users-list">
         <div 
           class="user-item" 
           *ngFor="let u of filteredUsers()"
-          (click)="toggleUserSelection(u.uid)"
+          (click)="toggleUserSelection(u)"
         >
-          <img [src]="u.avatarUrl || 'assets/default-avatar.png'" alt="avatar" class="sm-avatar" />
+          <ng-container *ngIf="u.avatarUrl; else noAvatar">
+            <img [src]="u.avatarUrl" alt="avatar" class="sm-avatar" />
+          </ng-container>
+          <ng-template #noAvatar>
+            <div class="sm-avatar sm-avatar-placeholder">
+              {{ (u.displayName || u.username || '?').charAt(0).toUpperCase() }}
+            </div>
+          </ng-template>
           <div class="user-info">
             <span class="display-name">{{ u.displayName }}</span>
             <span class="username">&#64;{{ u.username }}</span>

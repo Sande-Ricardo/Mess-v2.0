@@ -37,7 +37,14 @@
     <h4>Members</h4>
     <div class="members-list">
       <div class="member-item" *ngFor="let m of members()">
-        <img [src]="m.profile?.avatarUrl || 'assets/default-avatar.png'" class="avatar-sm" alt="m.profile?.displayName">
+        <ng-container *ngIf="m.profile?.avatarUrl; else noAvatar">
+          <img [src]="m.profile?.avatarUrl" class="avatar-sm" [alt]="m.profile?.displayName">
+        </ng-container>
+        <ng-template #noAvatar>
+          <div class="avatar-sm avatar-sm-placeholder">
+            {{ (m.profile?.displayName || 'Unknown').charAt(0).toUpperCase() }}
+          </div>
+        </ng-template>
         <div class="member-info flex-1">
           <div class="name-row">
             <span class="name">{{ m.profile?.displayName || 'Unknown User' }}</span>

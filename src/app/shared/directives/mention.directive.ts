@@ -165,11 +165,34 @@ export class MentionDirective implements OnInit, OnDestroy {
 
       item.onclick = () => this.selectUser(m);
 
-      const img = document.createElement('img');
-      img.src = m.avatarUrl || 'assets/default-avatar.png';
-      Object.assign(img.style, {
-        width: '24px', height: '24px', borderRadius: '50%', marginRight: '10px', objectFit: 'cover'
-      });
+      let avatarElement: HTMLElement;
+      if (m.avatarUrl) {
+        const img = document.createElement('img');
+        img.src = m.avatarUrl;
+        Object.assign(img.style, {
+          width: '24px', height: '24px', borderRadius: '50%', marginRight: '10px', objectFit: 'cover'
+        });
+        avatarElement = img;
+      } else {
+        const placeholder = document.createElement('div');
+        placeholder.textContent = (m.displayName || m.username || '?').charAt(0).toUpperCase();
+        Object.assign(placeholder.style, {
+          width: '24px',
+          height: '24px',
+          borderRadius: '50%',
+          marginRight: '10px',
+          background: 'linear-gradient(135deg, var(--accent-primary, #8a2be2), var(--accent-secondary, #00d2ff))',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#fff',
+          fontWeight: '600',
+          fontSize: '0.75rem',
+          textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)',
+          userSelect: 'none'
+        });
+        avatarElement = placeholder;
+      }
 
       const span = document.createElement('span');
       span.textContent = m.displayName;
@@ -182,7 +205,7 @@ export class MentionDirective implements OnInit, OnDestroy {
       userSpan.style.fontSize = '0.75rem';
       userSpan.style.marginLeft = '8px';
 
-      item.appendChild(img);
+      item.appendChild(avatarElement);
       item.appendChild(span);
       item.appendChild(userSpan);
 
