@@ -5,6 +5,7 @@ import { Message } from '../models/chat.model';
 import { NotificationLevel, NotificationSettings } from '../models/user.model';
 import { AuthService } from './auth.service';
 import { FirebaseService } from './firebase.service';
+import { CryptoService } from './crypto.service';
 
 @Injectable({
   providedIn: 'root'
@@ -12,6 +13,12 @@ import { FirebaseService } from './firebase.service';
 export class NotificationService {
   private readonly authService = inject(AuthService);
   private readonly fbService = inject(FirebaseService);
+  private readonly cryptoService = inject(CryptoService);
+
+  private readonly SHARED_MVP_MNEMONIC = "apple banana cherry date elderberry fig grape hazelnut ice cream jelly kiwi lemon";
+  private sharedCryptoKey: CryptoKey | null = null;
+  private readonly initTime = Date.now();
+  private readonly notifiedMessageIds = new Set<string>();
 
   // Signal caching permission status
   public permissionStatus = signal<NotificationPermission>('default');
@@ -31,6 +38,7 @@ export class NotificationService {
   private activeListeners: (() => void)[] = [];
 
   constructor() {
+    this.initSharedCrypto();
     // Sync settings when current user changes
     if (typeof window !== 'undefined' && 'Notification' in window) {
       this.permissionStatus.set(Notification.permission);
@@ -66,12 +74,24 @@ export class NotificationService {
     });
   }
 
+  private async initSharedCrypto() {
+    this.sharedCryptoKey = await this.cryptoService.deriveKeyFromMnemonic(this.SHARED_MVP_MNEMONIC);
+  }
+
+  private async getCryptoKey(): Promise<CryptoKey> {
+    if (!this.sharedCryptoKey) {
+      await this.initSharedCrypto();
+    }
+    return this.sharedCryptoKey!;
+  }
+
   /**
    * Cleans up all active Firebase Realtime Database listeners.
    */
   private cleanupListeners() {
     this.activeListeners.forEach(unsub => unsub());
     this.activeListeners = [];
+    this.notifiedMessageIds.clear();
   }
 
   /**
@@ -107,6 +127,18 @@ export class NotificationService {
             // Count if it's sent to me, and status is not read
             if (msg.senderId !== uid && msg.status !== 'read' && msg.type !== 'deleted') {
               count++;
+
+              // Notification Trigger Logic
+              if (!this.notifiedMessageIds.has(msg.id)) {
+                this.notifiedMessageIds.add(msg.id);
+                // Only notify if it's a truly new message that arrived after app loaded
+                if (msg.timestamp >= this.initTime) {
+                  this.processAndNotify(convId, msg);
+                }
+              }
+            } else {
+              // If it's ours, read, or deleted, mark as seen to avoid notifying later
+              this.notifiedMessageIds.add(msg.id);
             }
           }
 
@@ -118,6 +150,23 @@ export class NotificationService {
     });
 
     this.activeListeners.push(unsubConvs);
+  }
+
+  private async processAndNotify(convId: string, msg: Message) {
+    try {
+      const key = await this.getCryptoKey();
+      let plainContent = "🔒 [Encrypted]";
+      if (msg.type === 'text') {
+        plainContent = await this.cryptoService.decryptData(msg.content, key);
+      } else {
+        plainContent = `New ${msg.type} message`;
+      }
+      
+      const decryptedMsg = { ...msg, content: plainContent };
+      await this.showNotification(convId, decryptedMsg);
+    } catch (e) {
+      console.warn("Failed to decrypt for notification", e);
+    }
   }
 
   /**

@@ -1,61 +1,73 @@
-<div class="notifications-settings">
-  <div class="settings-header">
-    <h2>Notificaciones</h2>
-    <p>Personaliza cómo y cuándo Mess te alerta de nuevos mensajes.</p>
-  </div>
-
-  <!-- Browser Permissions Section -->
-  <div class="setting-card">
-    <div class="card-info">
-      <h3>Permisos del Navegador</h3>
-      <p>Habilita las notificaciones de escritorio para recibir alertas incluso cuando Mess está en segundo plano.</p>
-    </div>
-    <div class="card-action">
-      <button 
-        class="glass-btn primary" 
-        (click)="requestPermissions()"
-        [disabled]="notificationService.permissionStatus() !== 'default'">
-        {{ notificationService.permissionStatus() === 'granted' ? 'Habilitadas' : (notificationService.permissionStatus() === 'denied' ? 'Bloqueadas' : 'Habilitar') }}
+<div class="notifications-container fade-in">
+  <div class="notifications-header">
+    <div class="left-actions">
+      <button class="icon-btn close-btn" (click)="layoutState.clearView()" title="Close notifications">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
       </button>
     </div>
+    <h2>Notifications</h2>
+    <div class="right-actions"></div>
   </div>
 
-  <!-- Default Level Section -->
-  <div class="setting-card">
-    <div class="card-info">
-      <h3>Nivel por Defecto</h3>
-      <p>Selecciona la intensidad de las alertas para las nuevas conversaciones.</p>
-    </div>
-    <div class="card-action">
-      <select 
-        class="glass-select" 
-        [ngModel]="notificationService.userSettings()?.defaultLevel || 'normal'" 
-        (ngModelChange)="updateDefaultLevel($event)">
-        <option value="silent">Silencioso (Solo Badge)</option>
-        <option value="normal">Normal (Push sin sonido)</option>
-        <option value="urgent">Urgente (Push + Sonido Premium)</option>
-      </select>
-    </div>
-  </div>
+  <div class="notifications-content scrollable">
+    <p class="subtitle">Customize how and when Mess alerts you of new messages.</p>
 
-  <!-- Daily Summary Section -->
-  <div class="setting-card">
-    <div class="card-info">
-      <h3>Resumen Diario</h3>
-      <p>Recibe un compilado diario de los mensajes no leídos en lugar de notificaciones constantes.</p>
+    <!-- Browser Permissions Section -->
+    <div class="setting-card">
+      <div class="card-info">
+        <h3>Browser Permissions</h3>
+        <p>Enable desktop notifications to receive alerts even when Mess is in the background.</p>
+      </div>
+      <div class="card-action">
+        <button 
+          class="glass-btn primary" 
+          (click)="requestPermissions()"
+          [disabled]="notificationService.permissionStatus() !== 'default'">
+          {{ notificationService.permissionStatus() === 'granted' ? 'Enabled' : (notificationService.permissionStatus() === 'denied' ? 'Blocked' : 'Enable') }}
+        </button>
+      </div>
     </div>
-    <div class="card-action">
-      <label class="toggle-switch">
-        <input 
-          type="checkbox" 
-          [ngModel]="notificationService.userSettings()?.dailySummary || false" 
-          (ngModelChange)="updateDailySummary($event)">
-        <span class="slider"></span>
-      </label>
-    </div>
-  </div>
 
-  <div class="settings-hint">
-    <strong>Tip:</strong> Las menciones directas (&#64;tu_usuario) siempre emitirán una notificación urgente para que no te pierdas nada importante.
+    <!-- Default Level Section -->
+    <div class="setting-card">
+      <div class="card-info">
+        <h3>Default Level</h3>
+        <p>Select the alert intensity for new conversations.</p>
+      </div>
+      <div class="card-action">
+        <select 
+          class="glass-select" 
+          [ngModel]="notificationService.userSettings()?.defaultLevel || 'normal'" 
+          (ngModelChange)="updateDefaultLevel($event)">
+          <option value="silent">Silent (Badge Only)</option>
+          <option value="normal">Normal (Push without sound)</option>
+          <option value="urgent">Urgent (Push + Premium Sound)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Daily Summary Section -->
+    <div class="setting-card">
+      <div class="card-info">
+        <h3>Daily Summary</h3>
+        <p>Receive a daily compilation of unread messages instead of constant notifications.</p>
+      </div>
+      <div class="card-action">
+        <label class="toggle-switch">
+          <input 
+            type="checkbox" 
+            [ngModel]="notificationService.userSettings()?.dailySummary || false" 
+            (ngModelChange)="updateDailySummary($event)">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="settings-hint">
+      <strong>Tip:</strong> Direct mentions (&#64;{{ authService.currentUser()?.username || 'your_username' }}) will always trigger an urgent notification so you don't miss anything important.
+    </div>
   </div>
 </div>

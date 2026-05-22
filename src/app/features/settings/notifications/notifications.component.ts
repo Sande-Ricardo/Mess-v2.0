@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { NotificationLevel, NotificationSettings } from '../../../core/models/user.model';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { LayoutStateService } from '../../../core/services/layout-state.service';
 
 @Component({
   selector: 'app-notifications',
@@ -14,7 +15,8 @@ import { NotificationService } from '../../../core/services/notification.service
 })
 export class NotificationsComponent {
   public readonly notificationService = inject(NotificationService);
-  private readonly authService = inject(AuthService);
+  public readonly authService = inject(AuthService);
+  public readonly layoutState = inject(LayoutStateService);
 
   public async updateDefaultLevel(level: NotificationLevel) {
     const user = this.authService.currentUser();
