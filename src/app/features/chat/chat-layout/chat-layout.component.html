@@ -1,4 +1,4 @@
-<div class="app-layout" [class.chat-active]="outlet.isActivated" [class.profile-active]="layoutState.activeMenuView() === 'profile' || layoutState.activeMenuView() === 'notifications'">
+<div class="app-layout" [class.chat-active]="outlet.isActivated" [class.profile-active]="layoutState.activeMenuView() === 'profile' || layoutState.activeMenuView() === 'notifications' || layoutState.activeMenuView() === 'contact-profile'">
   
   <aside class="sidebar-column">
     <app-conversation-list></app-conversation-list>
@@ -22,6 +22,10 @@
     } @else if (layoutState.activeMenuView() === 'notifications') {
       <div class="view-overlay">
         <app-notifications></app-notifications>
+      </div>
+    } @else if (layoutState.activeMenuView() === 'contact-profile') {
+      <div class="view-overlay">
+        <app-contact-profile></app-contact-profile>
       </div>
     }
 

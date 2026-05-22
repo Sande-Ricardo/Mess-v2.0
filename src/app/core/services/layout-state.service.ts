@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 
-export type MenuView = 'profile' | 'settings' | 'notifications' | null;
+export type MenuView = 'profile' | 'settings' | 'notifications' | 'contact-profile' | null;
 
 @Injectable({
   providedIn: 'root'
@@ -8,6 +8,10 @@ export type MenuView = 'profile' | 'settings' | 'notifications' | null;
 export class LayoutStateService {
   isMainMenuOpen = signal<boolean>(false);
   activeMenuView = signal<MenuView>(null);
+
+  // Payload signals for context-aware views
+  activeContactId = signal<string | null>(null);
+  isGroupContact = signal<boolean>(false);
 
   openMenu() {
     this.isMainMenuOpen.set(true);
@@ -38,7 +42,14 @@ export class LayoutStateService {
     this.activeMenuView.set('notifications');
   }
 
+  openContactProfile(targetId: string, isGroup: boolean = false) {
+    this.activeContactId.set(targetId);
+    this.isGroupContact.set(isGroup);
+    this.activeMenuView.set('contact-profile');
+  }
+
   clearView() {
     this.activeMenuView.set(null);
+    this.activeContactId.set(null);
   }
 }

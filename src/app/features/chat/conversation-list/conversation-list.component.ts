@@ -187,6 +187,7 @@ export class ConversationListComponent {
         idx = (idx - 1 < 0) ? currentList.length - 1 : idx - 1;
       }
 
+      this.layoutState.clearView();
       this.router.navigate(['/chat', currentList[idx].id]);
     }
   }
@@ -201,6 +202,7 @@ export class ConversationListComponent {
     this.userSearchQuery.set('');
     this.foundUserResult.set(null);
     this.searchNotFound.set(false);
+    this.layoutState.clearView();
     this.router.navigate(['/chat', convId]);
   }
 }

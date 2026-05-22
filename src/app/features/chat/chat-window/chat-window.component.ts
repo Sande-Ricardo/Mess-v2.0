@@ -28,6 +28,7 @@ import { FirebaseService } from '../../../core/services/firebase.service';
 import { GroupService } from '../../../core/services/group.service';
 import { PresenceService } from '../../../core/services/presence.service';
 import { CallType, WebRTCService } from '../../../core/services/webrtc.service';
+import { LayoutStateService } from '../../../core/services/layout-state.service';
 import { ImageViewerComponent } from '../image-viewer/image-viewer.component';
 import { VoiceMessageComponent } from '../voice-message/voice-message.component';
 import { VoiceRecorderComponent } from '../voice-recorder/voice-recorder.component';
@@ -53,6 +54,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly cloudinaryService = inject(CloudinaryService);
   private readonly webrtcService = inject(WebRTCService);
+  private readonly layoutState = inject(LayoutStateService);
 
   @ViewChild('scrollViewport') viewport!: CdkVirtualScrollViewport;
   @ViewChild('imageInput') imageInput!: import('@angular/core').ElementRef<HTMLInputElement>;
@@ -228,6 +230,13 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
   }
 
   // ── Actions ────────────────────────────────────────────────────
+
+  public openContactProfile() {
+    const targetUid = this.isGroup() ? this.convId() : this.getOtherUid();
+    if (targetUid) {
+      this.layoutState.openContactProfile(targetUid, this.isGroup());
+    }
+  }
 
   public async startAudioCall() {
     await this.initiateCall('voice');

@@ -1,0 +1,85 @@
+<div class="profile-container fade-in">
+  <div class="profile-header">
+    <div class="left-actions">
+      <button class="icon-btn close-btn" (click)="layoutState.clearView()" title="Close profile">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+      </button>
+    </div>
+    <h2>Contact Info</h2>
+    <div class="right-actions"></div>
+  </div>
+  
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+    </div>
+  } @else {
+    <div class="profile-content scrollable">
+      
+      @if (layoutState.isGroupContact() && groupData()) {
+        <!-- Group View -->
+        <div class="avatar-section">
+          <div class="avatar-wrapper group-avatar">
+            @if (groupData()!.avatarUrl) {
+              <img [src]="groupData()!.avatarUrl" alt="Group Avatar" class="avatar-img" />
+            } @else {
+              <div class="avatar-placeholder">
+                {{ groupData()!.name.charAt(0) | uppercase }}
+              </div>
+            }
+          </div>
+          <h3 class="display-name">{{ groupData()!.name }}</h3>
+          <span class="status">{{ groupData()!.memberCount }} members</span>
+        </div>
+      } @else if (!layoutState.isGroupContact() && contactUser()) {
+        <!-- Direct Contact View -->
+        <div class="avatar-section">
+          <div class="avatar-wrapper">
+            @if (contactUser()!.avatarUrl) {
+              <img [src]="contactUser()!.avatarUrl" alt="Avatar" class="avatar-img" />
+            } @else {
+              <div class="avatar-placeholder">
+                {{ contactUser()!.displayName.charAt(0) | uppercase }}
+              </div>
+            }
+          </div>
+          <h3 class="display-name">{{ contactUser()!.displayName }}</h3>
+          <span class="username">&#64;{{ contactUser()!.username }}</span>
+          
+          <div class="status-badge" [class.online]="isOnline()">
+            <span class="dot"></span>
+            {{ isOnline() ? 'Online' : 'Offline' }}
+          </div>
+        </div>
+
+        <div class="info-group">
+          <div class="info-item">
+            <span class="label">Bio</span>
+            <span class="value">{{ contactUser()!.bio || 'Available' }}</span>
+          </div>
+
+          <div class="info-item">
+            <span class="label">Email</span>
+            <span class="value muted">{{ contactUser()!.email }}</span>
+          </div>
+
+          @if (contactUser()!.phoneNumber) {
+            <div class="info-item">
+              <span class="label">Phone</span>
+              <span class="value muted">{{ contactUser()!.phoneNumber }}</span>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Future Scaling: Shared Media / Action Buttons can go here -->
+      <div class="future-expansion-hint" *ngIf="contactUser()">
+        <button class="glass-btn outline">Block Contact</button>
+      </div>
+
+    </div>
+  }
+</div>

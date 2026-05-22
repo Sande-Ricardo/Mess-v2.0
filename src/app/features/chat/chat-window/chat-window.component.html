@@ -10,16 +10,19 @@
           <polyline points="12 19 5 12 12 5"></polyline>
         </svg>
       </button>
-      <div class="avatar-mock">
-        @if (contactAvatarUrl()) {
-        <img [src]="contactAvatarUrl()" alt="Avatar" class="avatar-img" />
-        } @else {
-        {{ contactName().charAt(0) }}
-        }
-      </div>
-      <div class="details">
-        <h2>{{ contactName() }}</h2>
-        <span class="status">{{ contactStatus() }}</span>
+      
+      <div class="profile-trigger" (click)="openContactProfile()" style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer;">
+        <div class="avatar-mock">
+          @if (contactAvatarUrl()) {
+          <img [src]="contactAvatarUrl()" alt="Avatar" class="avatar-img" />
+          } @else {
+          {{ contactName().charAt(0) }}
+          }
+        </div>
+        <div class="details">
+          <h2>{{ contactName() }}</h2>
+          <span class="status">{{ contactStatus() }}</span>
+        </div>
       </div>
     </div>
 

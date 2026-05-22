@@ -87,7 +87,7 @@
       </div>
       } @else {
         @for (conv of filteredConversations(); track conv.id) {
-        <a [routerLink]="['/chat', conv.id]" routerLinkActive="active" class="conversation-item fade-in">
+        <a [routerLink]="['/chat', conv.id]" routerLinkActive="active" class="conversation-item fade-in" (click)="layoutState.clearView()">
           <div class="avatar-mock" [class.group-avatar]="conv.isGroup">
             @if (conv.avatarUrl) {
               <img [src]="conv.avatarUrl" alt="Avatar" class="avatar-img" />
