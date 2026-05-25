@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { LayoutStateService } from '../../../core/services/layout-state.service';
 import { WebRTCService } from '../../../core/services/webrtc.service';
@@ -11,17 +11,27 @@ import { NotificationsComponent } from '../../settings/notifications/notificatio
 import { ActiveCallComponent } from '../active-call/active-call.component';
 import { ConversationListComponent } from '../conversation-list/conversation-list.component';
 import { IncomingCallModalComponent } from '../incoming-call-modal/incoming-call-modal.component';
+import { GroupProfileComponent } from '../../profile/group-profile/group-profile.component';
 
 @Component({
   selector: 'app-chat-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, ConversationListComponent, IncomingCallModalComponent, ActiveCallComponent, AppLogoComponent, MainMenuComponent, UserProfileComponent, ContactProfileComponent, NotificationsComponent],
+  imports: [CommonModule, RouterOutlet, ConversationListComponent, IncomingCallModalComponent, ActiveCallComponent, AppLogoComponent, MainMenuComponent, UserProfileComponent, ContactProfileComponent, GroupProfileComponent, NotificationsComponent],
   templateUrl: './chat-layout.component.html',
   styleUrl: './chat-layout.component.scss'
 })
 export class ChatLayoutComponent implements OnInit {
   private readonly webrtcService = inject(WebRTCService);
   public readonly layoutState = inject(LayoutStateService);
+  public isChatActive = signal<boolean>(false);
+
+  onActivate() {
+    setTimeout(() => this.isChatActive.set(true));
+  }
+
+  onDeactivate() {
+    setTimeout(() => this.isChatActive.set(false));
+  }
 
   ngOnInit() {
     this.webrtcService.initIncomingListener();

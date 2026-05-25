@@ -1,0 +1,189 @@
+<div class="profile-container fade-in">
+  <!-- Header -->
+  <div class="profile-header">
+    <div class="left-actions">
+      <button class="icon-btn close-btn" (click)="layoutState.clearView()" title="Close profile">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+      </button>
+    </div>
+    <h2>Group Info</h2>
+    <div class="right-actions"></div>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+    </div>
+  } @else if (metadata()) {
+    <div class="profile-content scrollable">
+      
+      <!-- Group Identity Section -->
+      <div class="avatar-section">
+        <div class="avatar-wrapper group-avatar">
+          @if (metadata()!.avatarUrl) {
+            <img [src]="metadata()!.avatarUrl" alt="Group Avatar" class="avatar-img" />
+          } @else {
+            <div class="avatar-placeholder">
+              {{ metadata()!.name.charAt(0) | uppercase }}
+            </div>
+          }
+        </div>
+
+        <!-- Group Name & Editor -->
+        <div class="name-display-container">
+          @if (!isEditingName()) {
+            <h3 class="display-name">
+              {{ metadata()!.name }}
+              @if (isAdmin()) {
+                <button class="edit-icon-btn" (click)="enableNameEdit()" title="Edit name">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                </button>
+              }
+            </h3>
+          } @else {
+            <div class="inline-editor">
+              <input type="text" [(ngModel)]="editNameText" class="glass-input" maxlength="40" placeholder="Group Name" />
+              <div class="editor-buttons">
+                <button class="glass-btn icon-confirm" (click)="saveName()">✓</button>
+                <button class="glass-btn icon-cancel" (click)="isEditingName.set(false)">✗</button>
+              </div>
+            </div>
+          }
+        </div>
+
+        <span class="status">{{ members().length }} members</span>
+      </div>
+
+      <!-- Description Section -->
+      <div class="info-group">
+        <div class="info-item border-bottom">
+          <div class="section-label-row">
+            <span class="label">Description</span>
+            @if (isAdmin() && !isEditingDesc()) {
+              <button class="edit-icon-btn small" (click)="enableDescEdit()" title="Edit description">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+              </button>
+            }
+          </div>
+
+          @if (!isEditingDesc()) {
+            <span class="value block-desc">{{ metadata()!.description || 'No description provided.' }}</span>
+          } @else {
+            <div class="inline-textarea-editor">
+              <textarea [(ngModel)]="editDescText" rows="3" class="glass-textarea" maxlength="200" placeholder="Describe your group..."></textarea>
+              <div class="editor-buttons right-align">
+                <button class="glass-btn text-btn cancel" (click)="isEditingDesc.set(false)">Cancel</button>
+                <button class="glass-btn text-btn confirm" (click)="saveDescription()">Save</button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Actions Panel (Phase 5: Clear Messages / Phase 5: Add Members Modal Trigger) -->
+      <div class="group-actions-row">
+        @if (isAdmin()) {
+          <button class="glass-btn outline flex-btn" (click)="openAddMembers()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+            Add Member
+          </button>
+        }
+        <button class="glass-btn outline flex-btn warning-tint" (click)="clearMessages()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+          Clear Chat
+        </button>
+      </div>
+
+      <!-- Add Members Panel -->
+      @if (showAddMembers()) {
+        <div class="add-members-section glass-panel-inner">
+          <div class="add-members-header">
+            <h4>Add New Member</h4>
+            <button class="icon-btn small-close" (click)="showAddMembers.set(false)">×</button>
+          </div>
+          <div class="search-box">
+            <span class="icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </span>
+            <input type="text" placeholder="Search by name or @username" [ngModel]="searchQuery()" (ngModelChange)="onSearchInput($event)" />
+          </div>
+
+          <div class="search-results-list">
+            @if (isSearching()) {
+              <div class="search-state-info">Searching...</div>
+            } @else if (searchResults().length === 0) {
+              <div class="search-state-info">No contacts available to add.</div>
+            } @else {
+              @for (user of searchResults(); track user.uid) {
+                <div class="contact-row">
+                  <div class="avatar-sm">
+                    @if (user.avatarUrl) {
+                      <img [src]="user.avatarUrl" [alt]="user.displayName" class="avatar-img" />
+                    } @else {
+                      <div class="avatar-placeholder-sm">
+                        {{ user.displayName.charAt(0) | uppercase }}
+                      </div>
+                    }
+                  </div>
+                  <div class="contact-info">
+                    <span class="name">{{ user.displayName }}</span>
+                    <span class="username">&#64;{{ user.username }}</span>
+                  </div>
+                  <button class="glass-btn confirm text-btn-sm" (click)="addMemberToGroup(user)">Add</button>
+                </div>
+              }
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Members Section -->
+      <div class="members-section">
+        <h4 class="section-title">Group Members</h4>
+        <div class="members-list">
+          @for (m of members(); track m.uid) {
+            <div class="member-item">
+              <div class="avatar-wrapper-sm">
+                @if (m.profile?.avatarUrl) {
+                  <img [src]="m.profile?.avatarUrl" class="avatar-img" [alt]="m.profile?.displayName">
+                } @else {
+                  <div class="avatar-placeholder-sm">
+                    {{ (m.profile?.displayName || 'Unknown').charAt(0) | uppercase }}
+                  </div>
+                }
+              </div>
+              <div class="member-info flex-1">
+                <div class="name-row">
+                  <span class="name">{{ m.profile?.displayName || 'Unknown User' }}</span>
+                  <span class="badge" [class.admin]="m.role === 'admin'">{{ m.role | uppercase }}</span>
+                </div>
+                <p class="joined text-xs">Joined {{ m.joinedAt | date:'mediumDate' }}</p>
+              </div>
+
+              <!-- Phase 4 Admin Controls -->
+              @if (isAdmin() && m.uid !== currentUserId() && m.role !== 'admin') {
+                <div class="admin-actions">
+                  <button class="icon-btn action-btn promote" (click)="promoteUser(m.uid)" title="Promote to admin">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"></path><path d="m5 10 7-7 7 7"></path><path d="M2 21h20"></path></svg>
+                  </button>
+                  <button class="icon-btn action-btn kick" (click)="expelUser(m.uid)" title="Kick member">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Danger Zone - Leave Group -->
+      <div class="future-expansion-hint">
+        <button class="glass-btn outline danger" (click)="leaveGroup()">Leave Group</button>
+      </div>
+
+    </div>
+  }
+</div>

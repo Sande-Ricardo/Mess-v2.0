@@ -312,6 +312,32 @@ export class ChatService {
   }
 
   /**
+   * Clears all messages in a conversation locally for the current user.
+   */
+  public async clearChat(convId: string): Promise<void> {
+    const currentUid = this.authService.currentUser()?.uid;
+    if (!currentUid) throw new Error("No authenticated user.");
+
+    const messagesRef = child(this.fbService.rootRef, `conversations/${convId}/messages`);
+    const snapshot = await get(messagesRef);
+    if (!snapshot.exists()) return;
+
+    const rawMessages = snapshot.val();
+    const updates: Record<string, any> = {};
+
+    for (const msgId in rawMessages) {
+      const rawMsg = rawMessages[msgId];
+      if (!rawMsg.deletedBy?.[currentUid]) {
+        updates[`conversations/${convId}/messages/${msgId}/deletedBy/${currentUid}`] = true;
+      }
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await update(this.fbService.rootRef, updates);
+    }
+  }
+
+  /**
    * Updates read receipts / delivery status.
    */
   public async updateMessageStatus(convId: string, msgId: string, status: MessageStatus): Promise<void> {

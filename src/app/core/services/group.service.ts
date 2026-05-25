@@ -19,6 +19,58 @@ export class GroupService {
   private readonly SHARED_MVP_MNEMONIC = "apple banana cherry date elderberry fig grape hazelnut ice cream jelly kiwi lemon";
   private sharedCryptoKey: CryptoKey | null = null;
 
+  constructor() {
+    this.runSilentRolesMigration();
+  }
+
+  public async runSilentRolesMigration(): Promise<void> {
+    if (typeof window === 'undefined' || localStorage.getItem('mess_group_roles_migrated_v1') === 'true') return;
+    const myUid = this.authService.currentUser()?.uid;
+    if (!myUid) {
+      // If auth is not resolved yet, listen to it once
+      const sub = authState(this.fbService.auth).subscribe(fbUser => {
+        if (fbUser) {
+          this.executeMigrationForUser(fbUser.uid);
+          sub.unsubscribe();
+        }
+      });
+      return;
+    }
+    await this.executeMigrationForUser(myUid);
+  }
+
+  private async executeMigrationForUser(myUid: string): Promise<void> {
+    try {
+      const userGroupsRef = child(this.fbService.rootRef, `users/${myUid}/groups`);
+      const indexSnap = await get(userGroupsRef);
+      if (!indexSnap.exists()) return;
+
+      const groupIds = Object.keys(indexSnap.val());
+      const updates: Record<string, any> = {};
+
+      for (const groupId of groupIds) {
+        const membersRef = child(this.fbService.rootRef, `groups/${groupId}/members`);
+        const membersSnap = await get(membersRef);
+        if (membersSnap.exists()) {
+          const membersVal = membersSnap.val();
+          for (const [uid, memberData] of Object.entries(membersVal)) {
+            if (memberData && typeof memberData === 'object' && !('role' in memberData)) {
+              updates[`groups/${groupId}/members/${uid}/role`] = 'admin';
+            }
+          }
+        }
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await update(this.fbService.rootRef, updates);
+      }
+    } catch (err) {
+      console.error("Silent roles migration failed:", err);
+    } finally {
+      localStorage.setItem('mess_group_roles_migrated_v1', 'true');
+    }
+  }
+
   private async getCryptoKey(): Promise<CryptoKey> {
     if (!this.sharedCryptoKey) {
       this.sharedCryptoKey = await this.cryptoService.deriveKeyFromMnemonic(this.SHARED_MVP_MNEMONIC);
@@ -46,29 +98,42 @@ export class GroupService {
     }
   }
 
-  public async createGroup(name: string, avatarUrl?: string): Promise<string> {
+  public async createGroup(name: string, avatarUrl?: string, memberUids: string[] = []): Promise<string> {
     const currentUid = this.authService.currentUser()?.uid;
     if (!currentUid) throw new Error("No authenticated user.");
 
     const groupId = this.generateId();
     const metadata: GroupMetadata = {
       name,
-      avatarUrl,
       createdAt: Date.now(),
       createdBy: currentUid,
-      memberCount: 1
+      memberCount: 1 + memberUids.length
+    };
+    if (avatarUrl) {
+      metadata.avatarUrl = avatarUrl;
+    }
+
+    const adminMember: GroupMember = {
+      role: 'admin',
+      joinedAt: Date.now()
     };
 
-    const member: GroupMember = {
-      role: 'admin',
+    const stdMember: GroupMember = {
+      role: 'member',
       joinedAt: Date.now()
     };
 
     // Multi-path update
     const updates: Record<string, any> = {};
     updates[`groups/${groupId}/metadata`] = metadata;
-    updates[`groups/${groupId}/members/${currentUid}`] = member;
+    updates[`groups/${groupId}/members/${currentUid}`] = adminMember;
     updates[`users/${currentUid}/groups/${groupId}`] = true;
+
+    const filteredUids = memberUids.filter(uid => uid !== currentUid);
+    for (const uid of filteredUids) {
+      updates[`groups/${groupId}/members/${uid}`] = stdMember;
+      updates[`users/${uid}/groups/${groupId}`] = true;
+    }
 
     await update(this.fbService.rootRef, updates);
     return groupId;
@@ -189,14 +254,15 @@ export class GroupService {
   }
 
   public getGroupMembers(groupId: string): Observable<Record<string, GroupMember>> {
-    const subject = new Subject<Record<string, GroupMember>>();
-    const membersRef = child(this.fbService.rootRef, `groups/${groupId}/members`);
-
-    onValue(membersRef, (snapshot) => {
-      subject.next(snapshot.val() || {});
+    return new Observable<Record<string, GroupMember>>(subscriber => {
+      const membersRef = child(this.fbService.rootRef, `groups/${groupId}/members`);
+      const unsubscribe = onValue(membersRef, (snapshot) => {
+        subscriber.next(snapshot.val() || {});
+      }, (error) => {
+        subscriber.error(error);
+      });
+      return () => unsubscribe();
     });
-
-    return subject.asObservable();
   }
 
   /**

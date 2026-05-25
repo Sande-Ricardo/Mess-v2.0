@@ -1,4 +1,4 @@
-<div class="app-layout" [class.chat-active]="outlet.isActivated" [class.profile-active]="layoutState.activeMenuView() === 'profile' || layoutState.activeMenuView() === 'notifications' || layoutState.activeMenuView() === 'contact-profile'">
+<div class="app-layout" [class.chat-active]="isChatActive()" [class.profile-active]="layoutState.activeMenuView() === 'profile' || layoutState.activeMenuView() === 'notifications' || layoutState.activeMenuView() === 'contact-profile' || layoutState.activeMenuView() === 'group-profile'">
   
   <aside class="sidebar-column">
     <app-conversation-list></app-conversation-list>
@@ -12,7 +12,7 @@
   </aside>
 
   <main class="chat-column">
-    <router-outlet #outlet="outlet"></router-outlet>
+    <router-outlet #outlet="outlet" (activate)="onActivate()" (deactivate)="onDeactivate()"></router-outlet>
     
     <!-- Active View Overlay (e.g. Profile, Notifications) -->
     @if (layoutState.activeMenuView() === 'profile') {
@@ -27,6 +27,10 @@
       <div class="view-overlay">
         <app-contact-profile></app-contact-profile>
       </div>
+    } @else if (layoutState.activeMenuView() === 'group-profile') {
+      <div class="view-overlay">
+        <app-group-profile></app-group-profile>
+      </div>
     }
 
     <!-- Backdrop when menu is open -->
@@ -34,7 +38,7 @@
       <div class="chat-backdrop" (click)="layoutState.closeMenu()"></div>
     }
     
-    @if (!outlet.isActivated) {
+    @if (!isChatActive()) {
       <div class="empty-layout-state fade-in">
         <div class="watermark-logo">
           <app-logo width="200px"></app-logo>

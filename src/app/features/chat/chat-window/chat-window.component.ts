@@ -232,9 +232,13 @@ export class ChatWindowComponent implements OnInit, OnDestroy {
   // ── Actions ────────────────────────────────────────────────────
 
   public openContactProfile() {
-    const targetUid = this.isGroup() ? this.convId() : this.getOtherUid();
-    if (targetUid) {
-      this.layoutState.openContactProfile(targetUid, this.isGroup());
+    const targetId = this.isGroup() ? this.convId() : this.getOtherUid();
+    if (targetId) {
+      if (this.isGroup()) {
+        this.layoutState.openGroupProfile(targetId);
+      } else {
+        this.layoutState.openContactProfile(targetId, false);
+      }
     }
   }
 

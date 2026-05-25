@@ -19,22 +19,7 @@
   } @else {
     <div class="profile-content scrollable">
       
-      @if (layoutState.isGroupContact() && groupData()) {
-        <!-- Group View -->
-        <div class="avatar-section">
-          <div class="avatar-wrapper group-avatar">
-            @if (groupData()!.avatarUrl) {
-              <img [src]="groupData()!.avatarUrl" alt="Group Avatar" class="avatar-img" />
-            } @else {
-              <div class="avatar-placeholder">
-                {{ groupData()!.name.charAt(0) | uppercase }}
-              </div>
-            }
-          </div>
-          <h3 class="display-name">{{ groupData()!.name }}</h3>
-          <span class="status">{{ groupData()!.memberCount }} members</span>
-        </div>
-      } @else if (!layoutState.isGroupContact() && contactUser()) {
+      @if (contactUser()) {
         <!-- Direct Contact View -->
         <div class="avatar-section">
           <div class="avatar-wrapper">

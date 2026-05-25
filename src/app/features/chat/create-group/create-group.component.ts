@@ -188,11 +188,8 @@ export class CreateGroupComponent {
         avatarUrl = uploadResult.secureUrl;
       }
 
-      const groupId = await this.groupService.createGroup(this.groupName(), avatarUrl);
-
-      for (const uid of this.selectedUids()) {
-        await this.groupService.addMember(groupId, uid);
-      }
+      const memberUids = Array.from(this.selectedUids());
+      const groupId = await this.groupService.createGroup(this.groupName(), avatarUrl, memberUids);
 
       this.closeModal();
       this.router.navigate(['/chat', groupId]);

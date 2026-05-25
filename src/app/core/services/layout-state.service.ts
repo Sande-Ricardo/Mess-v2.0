@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 
-export type MenuView = 'profile' | 'settings' | 'notifications' | 'contact-profile' | null;
+export type MenuView = 'profile' | 'settings' | 'notifications' | 'contact-profile' | 'group-profile' | null;
 
 @Injectable({
   providedIn: 'root'
@@ -46,6 +46,12 @@ export class LayoutStateService {
     this.activeContactId.set(targetId);
     this.isGroupContact.set(isGroup);
     this.activeMenuView.set('contact-profile');
+  }
+
+  openGroupProfile(groupId: string) {
+    this.activeContactId.set(groupId);
+    this.isGroupContact.set(true);
+    this.activeMenuView.set('group-profile');
   }
 
   clearView() {
