@@ -72,7 +72,7 @@
             </ng-container>
 
             <ng-container *ngIf="msg.type === 'text'">
-              <span class="content">{{ msg.content }}</span>
+              <span class="content" [innerHTML]="msg.content | highlightMentions"></span>
             </ng-container>
 
             <div class="meta-info">
@@ -158,7 +158,7 @@
         </div>
         <textarea cdkTextareaAutosize #autosize="cdkTextareaAutosize" cdkAutosizeMinRows="1" cdkAutosizeMaxRows="5"
           class="message-input" placeholder="Write a message.." [(ngModel)]="newMessage" (input)="onInput()"
-          (keydown)="onKeyDown($event)"></textarea>
+          (keydown)="onKeyDown($event)" [appMention]="isGroup() ? convId() : ''"></textarea>
       </div>
 
       <button class="icon-btn mic" *ngIf="!newMessage.trim()" (click)="isRecordingVoice = true">

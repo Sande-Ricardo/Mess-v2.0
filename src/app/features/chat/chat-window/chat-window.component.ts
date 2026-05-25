@@ -33,10 +33,13 @@ import { ImageViewerComponent } from '../image-viewer/image-viewer.component';
 import { VoiceMessageComponent } from '../voice-message/voice-message.component';
 import { VoiceRecorderComponent } from '../voice-recorder/voice-recorder.component';
 
+import { MentionDirective } from '../../../shared/directives/mention.directive';
+import { HighlightMentionsPipe } from '../../../shared/pipes/highlight-mentions.pipe';
+
 @Component({
   selector: 'app-chat-window',
   standalone: true,
-  imports: [CommonModule, FormsModule, ScrollingModule, TextFieldModule, VoiceRecorderComponent, VoiceMessageComponent, ImageViewerComponent],
+  imports: [CommonModule, FormsModule, ScrollingModule, TextFieldModule, VoiceRecorderComponent, VoiceMessageComponent, ImageViewerComponent, MentionDirective, HighlightMentionsPipe],
   templateUrl: './chat-window.component.html',
   styleUrl: './chat-window.component.scss',
   encapsulation: ViewEncapsulation.None

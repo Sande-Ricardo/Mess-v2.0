@@ -1,20 +1,22 @@
-import { Directive, ElementRef, HostListener, Input, Output, EventEmitter, inject, OnDestroy, OnInit } from '@angular/core';
+import { Directive, ElementRef, HostListener, Input, Output, EventEmitter, inject, OnDestroy, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { GroupService } from '../../core/services/group.service';
 import { FirebaseService } from '../../core/services/firebase.service';
 import { get, child } from '@angular/fire/database';
 import { User } from '../../core/models/user.model';
+import { AuthService } from '../../core/services/auth.service';
 
 @Directive({
   selector: '[appMention]',
   standalone: true
 })
-export class MentionDirective implements OnInit, OnDestroy {
+export class MentionDirective implements OnInit, OnDestroy, OnChanges {
   @Input('appMention') groupId!: string;
   @Output() mentionAdded = new EventEmitter<string>(); // Emits the uid of the mentioned user
 
   private el = inject(ElementRef<HTMLInputElement | HTMLTextAreaElement>);
   private groupService = inject(GroupService);
   private fbService = inject(FirebaseService);
+  private authService = inject(AuthService);
 
   private popupElement: HTMLDivElement | null = null;
   private membersCache: Array<{ uid: string, username: string, displayName: string, avatarUrl?: string }> = [];
@@ -24,8 +26,12 @@ export class MentionDirective implements OnInit, OnDestroy {
   private currentSearch = '';
 
   ngOnInit() {
-    if (this.groupId) {
-      this.loadMembers();
+    this.checkAndLoad();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['groupId'] && !changes['groupId'].firstChange) {
+      this.checkAndLoad();
     }
   }
 
@@ -33,11 +39,23 @@ export class MentionDirective implements OnInit, OnDestroy {
     this.removePopup();
   }
 
+  private checkAndLoad() {
+    if (this.groupId && this.groupId.startsWith('grp_')) {
+      this.loadMembers();
+    } else {
+      this.membersCache = [];
+      this.cancelMention();
+    }
+  }
+
   private loadMembers() {
     // Ideally this listens or caches effectively. simplified for directive
     this.groupService.getGroupMembers(this.groupId).subscribe(async (members) => {
       const arr = [];
+      const currentUid = this.authService.currentUser()?.uid;
       for (const uid of Object.keys(members || {})) {
+        if (uid === currentUid) continue; // Exclude self
+        
         const uSnap = await get(child(this.fbService.rootRef, `users/${uid}`));
         if (uSnap.exists()) {
           const user = uSnap.val() as User;
@@ -104,7 +122,7 @@ export class MentionDirective implements OnInit, OnDestroy {
     this.popupElement = document.createElement('div');
     this.popupElement.className = 'mention-popup';
     Object.assign(this.popupElement.style, {
-      position: 'absolute',
+      position: 'fixed',
       background: '#2a2a35',
       border: '1px solid rgba(255,255,255,0.1)',
       borderRadius: '8px',
@@ -113,7 +131,7 @@ export class MentionDirective implements OnInit, OnDestroy {
       overflowY: 'auto',
       zIndex: '9999',
       width: '250px',
-      display: 'lex',
+      display: 'flex',
       flexDirection: 'column'
     });
 
@@ -124,9 +142,10 @@ export class MentionDirective implements OnInit, OnDestroy {
   private updatePopupPosition() {
     if (!this.popupElement) return;
     const rect = this.el.nativeElement.getBoundingClientRect();
-    // Simplified positioning right below the input for now
-    this.popupElement.style.top = `${rect.bottom + window.scrollY + 4}px`;
-    this.popupElement.style.left = `${rect.left + window.scrollX}px`;
+    // Position fixed above the input field
+    this.popupElement.style.bottom = `${window.innerHeight - rect.top + 8}px`;
+    this.popupElement.style.left = `${rect.left}px`;
+    this.popupElement.style.top = 'auto';
   }
 
   private updatePopupContent() {

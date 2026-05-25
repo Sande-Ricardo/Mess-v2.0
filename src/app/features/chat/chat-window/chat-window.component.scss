@@ -574,3 +574,25 @@
     transform: rotate(360deg);
   }
 }
+.mention { 
+  color: var(--accent-primary, #00d2ff); 
+  font-weight: 700; 
+  cursor: pointer; 
+  background: rgba(138, 43, 226, 0.15);
+  padding: 2px 4px; 
+  border-radius: 6px;
+  transition: background 0.2s;
+  
+  &:hover {
+    background: rgba(138, 43, 226, 0.3);
+  }
+}
+
+.message-row.me .bubble .mention {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.2);
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.35);
+  }
+}
