@@ -7,12 +7,14 @@ Mess is a highly secure, feature-rich real-time messaging application MVP built 
 ### Security & Privacy
 
 - **End-to-End Encryption (E2EE):** All 1-on-1 and group chat messages are encrypted natively in the browser using the Web Crypto API before ever reaching the servers.
-- **Secure Architecture:** Firebase Realtime Database rules restrict unauthorized access at the node level, ensuring WebRTC signaling and message histories are strictly confined to participants.
+- **Secure Architecture:** Firebase Realtime Database rules restrict unauthorized access at the node level, ensuring WebRTC signaling and message histories are strictly confined to participants. Cleaned and optimized rules ensure high reliability without unnecessary `app_check` blockage.
 
-### Messaging
+### Messaging & UI
 
 - **1-on-1 & Group Chats:** Real-time text messaging with typing indicators, online/offline presence tracking, and read receipts.
-- **Group Management:** Robust role-based access control (Admins/Members). Supports group creation, avatar uploads, member promotion/kick, and UUID-based invite links.
+- **User Mentions & Tagging:** Dynamic `@username` tagging within group chats, complete with real-time UI filtering, smart auto-complete overlays, and highlighted rendering inside message bubbles.
+- **Advanced Group Management:** Robust role-based access control (Admins/Members). Supports group creation, member promotion, expelling users, clearing chat history, and UUID-based invite links.
+- **Interactive Profiles:** A sleek, sliding sidebar interface (`Profile Layouts`) allows users to seamlessly view Contact Profiles and Group Profiles without leaving the active chat window.
 - **Voice Messages:** Native microphone integration utilizing the `MediaRecorder` and `Web Audio API`. Features an animated UI waveform while recording and a custom playback controller with variable speeds.
 
 ### WebRTC P2P Calling
@@ -43,20 +45,23 @@ src/app/
 │   ├── models/       # TypeScript interfaces (User, Message, Group, etc.)
 │   └── services/     # Heavy-lifting business logic
 │       ├── auth.service.ts         # Firebase Authentication
-│       ├── chat.service.ts         # Encrypted message delivery
+│       ├── chat.service.ts         # Encrypted message delivery & chat management
 │       ├── crypto.service.ts       # Web Crypto API handlers
 │       ├── webrtc.service.ts       # 1v1 P2P Signaling
-│       ├── group-call.service.ts   # Mesh Topology Networking
+│       ├── group.service.ts        # Group lifecycle and atomic DB operations
+│       ├── layout-state.service.ts # State management for sliding UI sidebars
 │       ├── voice-recorder.service.ts # MediaRecorder wrappers
 │       └── cloudinary.service.ts   # Media uploads
 └── features/
-    └── chat/         # UI Components
-        ├── call/                 # Draggable WebRTC Window
-        ├── incoming-call/        # Web Notification Banner
-        ├── chat-window/          # Main conversation interface
-        ├── group-info/           # Group settings & members
-        ├── voice-recorder/       # Animated recording UI
-        └── voice-message/        # Custom audio player UI
+    ├── chat/         # Core Messaging UI Components
+    │   ├── call/                 # Draggable WebRTC Window
+    │   ├── incoming-call/        # Web Notification Banner
+    │   ├── chat-window/          # Main conversation interface
+    │   ├── voice-recorder/       # Animated recording UI
+    │   └── voice-message/        # Custom audio player UI
+    └── profile/      # Interactive Sidebar Profiles
+        ├── contact-profile/      # 1-on-1 contact information
+        └── group-profile/        # Group administration and member list
 ```
 
 ## Application Architecture & Data Flow
@@ -154,7 +159,7 @@ You must configure your backend environments before serving the app. Create or u
 
 ### 3. Deploy Database Rules
 
-Ensure your Firebase Realtime Database is secured by applying the provided `database.rules.json` file to your Firebase console. This secures the `/calls`, `/group-calls`, and `/messages` nodes.
+Ensure your Firebase Realtime Database is secured by applying the provided `database.rules.json` file to your Firebase console. This secures the `/calls`, `/group-calls`, `/conversations`, `/groups`, and `/messages` nodes.
 
 ### 4. Development Server
 
